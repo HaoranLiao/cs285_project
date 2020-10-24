@@ -1,0 +1,1 @@
+Based on image-compression (https://github.com/rajeev595/image-compression)
