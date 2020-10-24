@@ -50,9 +50,9 @@ class RND_Critic(object):
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
         filters = [
-                    tf.Tensor([8, 8, 4, 32]),
-                    tf.Tensor([4, 4, 32, 64]),
-                    tf.Tensor([3, 3, 64, 64])
+                    tf.Variable(tf.random_uniform((8, 8, 4, 32)), minval=low, maxval=high, dtype=tf.float32),
+                    tf.Variable(tf.random_uniform((4, 4, 32, 64)), minval=low, maxval=high, dtype=tf.float32),
+                    tf.Variable(tf.random_uniform((3, 3, 64, 64)), minval=low, maxval=high, dtype=tf.float32)
                 ]
         strides = [4, 2, 1]
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
