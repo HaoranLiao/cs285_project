@@ -23,6 +23,7 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
+
 DATASET_PATH = "../../data/mspacman"
 
 def get_exp_data(expert_path):
@@ -45,6 +46,7 @@ def get_exp_data_atari(expert_path):
         obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
         acs = np.array([], dtype=np.float32).reshape(0)
         for i in range(num_traj):
+
             obs = np.vstack([obs, data[i]['observation']])
             acs = np.concatenate([acs, data[i]["action"]])
 
@@ -170,10 +172,12 @@ def main(args):
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
+
         if args.env_id == "MsPacman-v0":
             exp_data = get_exp_data_atari(DATASET_PATH + '/expert_data_0.pkl')
         else:
             exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
+
 
         task_name = get_task_name(args)
         logger.configure(dir=log_dir, log_suffix=task_name, format_strs=["log", "stdout"])

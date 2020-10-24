@@ -22,8 +22,8 @@ class RND_Critic(object):
         lr = tf.placeholder(tf.float32, None)
 
 
-        feat = self.build_graph_cnn(ob, ac, self.scope, hid_layer, hid_size, out_size)
-        rnd_feat = self.build_graph_cnn(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size)
+        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size)
+        rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size)
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
@@ -48,8 +48,20 @@ class RND_Critic(object):
     #         layer = tf.layers.dense(layer, size, activation=None)
     #     return layer
 
-    def build_graph_cnn(self, ob, ac, scope, hid_layer, hid_size, size):
+    def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
+        filters = [
+                    tf.Tensor([8, 8, 4, 32]),
+                    tf.Tensor([4, 4, 32, 64]),
+                    tf.Tensor([3, 3, 64, 64])
+                ]
+        strides = [4, 2, 1]
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+            cnn_layer = tf.nn.conv2d(ob, filters[0], strides[0], "VALID")
+            assert len(filters) > 1 and len(strides) == filters
+            for i in np.arange(1, len(filters)):
+                cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
+            ob = tf.reshape(cnn_layer, [tf.shape(ob)[0], -1])   # flatten cnn output, except the batch axis
+
             layer = tf.concat([ob, ac], axis=1)
             for _ in range(hid_layer):
                 layer = tf.layers.dense(layer, hid_size, activation=tf.nn.leaky_relu)
