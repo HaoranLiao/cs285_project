@@ -9,8 +9,7 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/baselines/rnd_gail/"
+            "console": "integratedTerminal"
         }
     ]
 }
