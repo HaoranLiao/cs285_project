@@ -2,6 +2,7 @@ from tensorflow.python.ops.gen_batch_ops import Batch
 from VAE import VariationalAutoencoder
 from utils import *
 from sklearn.model_selection import train_test_split
+import os
 
 # CIFAR10 samples
 # x = read_cifar_data(range(1,6))
@@ -20,7 +21,7 @@ image_dim = x.shape[1:]
 print("Dataset loaded. Start training...")
 
 def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
-          batch_size=128, use_shared_weights=False, training_epochs=10, display_step=5):
+          batch_size=128, use_shared_weights=False, training_epochs=10, display_step=5, folder_name=""):
     """
         Function for training the Autoencoder
         Args:
@@ -32,7 +33,14 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
                 batch_size: batch size used for mini batch training.
                 training_epochs: No. of training epochs.
                 display_steps: Display for every (display_steps) no. of steps.
+                folder_name: Name of the folder for storing logs and checkpoints
     """    
+# Create folder when necessary
+    assert folder_name != ""
+    folder_name = "runs/" + folder_name
+    if folder_name[-1] != "/":
+        folder_name = folder_name + "/"
+    os.makedirs(folder_name, exist_ok=True)
     vae = VariationalAutoencoder(image_dim,
                                  conv_layer_specs,
                                  dense_layer_specs,
@@ -43,7 +51,7 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
     train_gen = BatchGenerator(x_train, batch_size)
     test_gen = BatchGenerator(x_test, batch_size)
 # Training Cycle
-    with open("cost_record.csv", "w") as f:
+    with open(folder_name + "/cost_record.csv", "w") as f:
         f.write("Epoch,training_cost,test_cost\n")
     best_val_cost = 1e10
     best_epoch_num = 0
@@ -64,7 +72,7 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
         total_val_cost = vae.evaluate(val_data)
 
     # Display and log
-        with open("cost_record.csv", "a") as f:
+        with open(folder_name + "/cost_record.csv", "a") as f:
             f.write("%4d, %.9f, %.9f\n" % (epoch + 1, total_cost, total_val_cost))
         if (epoch + 1) % display_step == 0:
             print ("Epoch:", '%04d' % (epoch+1),
@@ -73,9 +81,10 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
         if total_val_cost < best_val_cost:
             best_val_cost = total_val_cost
             best_epoch_num = epoch + 1
-            filename = vae.save_model("model")
+            filename = vae.save_model(folder_name + "/model")
     print('Saved model "%s" at epoch %d' % (filename, best_epoch_num))
     return vae
 
 if __name__ == "__main__":
-    train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000], 128, learning_rate=0.0001, batch_size=128, use_shared_weights=False ,training_epochs=100, display_step=5)
+    # train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000], 128, learning_rate=0.0001, batch_size=128, use_shared_weights=False ,training_epochs=100, display_step=5)
+    train([(32, 8, 4), (64, 4, 2), (64, 3, 1)], [], 64, learning_rate=0.0001, batch_size=128, use_shared_weights=False ,training_epochs=100, display_step=5, folder_name="small CNN, 64")
