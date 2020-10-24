@@ -62,8 +62,10 @@ class RND_Critic(object):
                     tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
                     tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
                     tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
-                ]
+        ]
         strides = [[4,4,1,1], [2,2,1,1], [1,1,1,1]]
+
+        
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
@@ -72,9 +74,22 @@ class RND_Critic(object):
             ob = tf.reshape(cnn_layer, [tf.shape(ob)[0], -1])   # flatten cnn output, except the batch axis
 
             layer = tf.concat([ob, ac], axis=1)
-            for _ in range(hid_layer):
-                layer = tf.layers.dense(layer, hid_size, activation=tf.nn.leaky_relu)
-            layer = tf.layers.dense(layer, size, activation=None)
+            dense_in = [tf.shape(layer)[1]]
+            dense_out = [64]
+            low, high = [], []
+            for i in range(len(dense_in)):
+                low.append(-np.sqrt(6.0/(dense_in[i] + dense_out[i])))
+                high.append(np.sqrt(6.0/(dense_in[i] + dense_out[i])))
+            weights = [
+                        tf.Variable(tf.random_uniform((dense_in[0], dense_out[0]), minval=low[0])
+            ]
+            biases = [
+                        tf.Variable(tf.zeros([dense_out[0]]), dtype=tf.float32)
+            ]
+            for i in range(hid_layer - 1):
+                layer = tf.add(tf.matmul(layer, weights[i], biases[i])
+                layer = tf.nn.relu(layer)
+            layer = tf.add(tfmatmul(layer, weights[-1], biases[-1])
         return layer
 
     def build_reward_op(self, ob, ac):
