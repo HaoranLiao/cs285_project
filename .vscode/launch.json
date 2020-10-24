@@ -9,7 +9,9 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/baselines/rnd_gail/",
+            "args": ["--env_id=MsPacman-v0"]
         }
     ]
 }

@@ -1,4 +1,6 @@
 import tensorflow as tf
+import sys
+sys.path.append("../../")
 from baselines.common import tf_util as U
 from baselines.common.dataset import iterbatches
 from baselines import logger
@@ -61,10 +63,10 @@ class RND_Critic(object):
                     tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
                     tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
                 ]
-        strides = [4, 2, 1]
+        strides = [[4,4,1,1], [2,2,1,1], [1,1,1,1]]
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
-            assert len(filters) > 1 and len(strides) == filters
+            assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
             ob = tf.reshape(cnn_layer, [tf.shape(ob)[0], -1])   # flatten cnn output, except the batch axis
