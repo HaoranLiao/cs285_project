@@ -17,8 +17,8 @@ class RND_Critic(object):
         self.reward_scale = reward_scale
         print("RND Critic")
 
-        ob = tf.placeholder(tf.float32, [None, ob_size])
-        ac = tf.placeholder(tf.float32, [None, ac_size])
+        ob = tf.placeholder(tf.float32, (None,) + ob_size)
+        ac = tf.placeholder(tf.float32, (None, ac_size))
         lr = tf.placeholder(tf.float32, None)
 
 
