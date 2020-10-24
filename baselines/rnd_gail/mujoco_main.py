@@ -23,30 +23,27 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-def get_exp_data(expert_path):
-    with open(expert_path, 'rb') as f:
-        data = pickle.loads(f.read())
-
-        data["actions"] = np.squeeze(data["actions"])
-        data["observations"] = data["observations"]
-
-        # print(data["observations"].shape)
-        # print(data["actions"].shape)
-        return [data["observations"], data["actions"]]
-
 # def get_exp_data(expert_path):
 #     with open(expert_path, 'rb') as f:
 #         data = pickle.loads(f.read())
-#         data = data[:3]
 
-#         num_traj = len(data)
-#         obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
-#         acs = np.array([], dtype=np.float32).reshape(0)
-#         for i in range(num_traj):
-#             obs = np.vstack([obs, data[i]['observation']])
-#             acs = np.concatenate([acs, data[i]["action"]])
+#         data["actions"] = np.squeeze(data["actions"])
+#         data["observations"] = data["observations"]
 
-#         return [obs, acs]
+#         return [data["observations"], data["actions"]]
+
+def get_exp_data(expert_path):
+    with open(expert_path, 'rb') as f:
+        data = pickle.loads(f.read())
+        data = data[:3]
+
+        obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
+        acs = np.array([], dtype=np.float32).reshape(0)
+        for i in range(len(data)):
+            obs = np.vstack([obs, data[i]['observation']])
+            acs = np.concatenate([acs, data[i]["action"]])
+
+        return [obs, acs]
 
 
 Log_dir = osp.expanduser("~/workspace/log/mujoco")
@@ -165,8 +162,8 @@ def main(args):
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
-        exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
-        # exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), '/mnt/c/Users/haora/Desktop/expert_data/expert_data_0.pkl'))
+        # exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
+        exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), '/mnt/c/Users/haora/Desktop/expert_data/expert_data_0.pkl'))
 
         task_name = get_task_name(args)
         logger.configure(dir=log_dir, log_suffix=task_name, format_strs=["log", "stdout"])
