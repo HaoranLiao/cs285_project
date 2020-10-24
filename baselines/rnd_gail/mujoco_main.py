@@ -23,23 +23,30 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-# def get_exp_data(expert_path):
-#     with open(expert_path, 'rb') as f:
-#         data = pickle.loads(f.read())
 
-#         data["actions"] = np.squeeze(data["actions"])
-#         data["observations"] = data["observations"]
-
-#         return [data["observations"], data["actions"]]
+DATASET_PATH = "../../data/mspacman"
 
 def get_exp_data(expert_path):
     with open(expert_path, 'rb') as f:
         data = pickle.loads(f.read())
+
+        data["actions"] = np.squeeze(data["actions"])
+        data["observations"] = data["observations"]
+
+        # print(data["observations"].shape)
+        # print(data["actions"].shape)
+        return [data["observations"], data["actions"]]
+
+def get_exp_data_atari(expert_path):
+    with open(expert_path, 'rb') as f:
+        data = pickle.loads(f.read())
         data = data[:3]
 
+        num_traj = len(data)
         obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
         acs = np.array([], dtype=np.float32).reshape(0)
-        for i in range(len(data)):
+        for i in range(num_traj):
+
             obs = np.vstack([obs, data[i]['observation']])
             acs = np.concatenate([acs, data[i]["action"]])
 
@@ -141,6 +148,9 @@ def modify_args(args):
 def main(args):
     set_global_seeds(args.seed)
     env = gym.make(args.env_id)
+    if args.env_id == "MsPacman-v0":
+        from baselines.common.wrappers import wrap_deepmind
+        env = wrap_deepmind(env)
     env.seed(args.seed)
 
     # env = bench.Monitor(env, logger.get_dir() and
@@ -162,8 +172,12 @@ def main(args):
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
-        # exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
-        exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), '/mnt/c/Users/haora/Desktop/expert_data/expert_data_0.pkl'))
+
+        if args.env_id == "MsPacman-v0":
+            exp_data = get_exp_data_atari(DATASET_PATH + '/expert_data_0.pkl')
+        else:
+            exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
+
 
         task_name = get_task_name(args)
         logger.configure(dir=log_dir, log_suffix=task_name, format_strs=["log", "stdout"])
@@ -176,6 +190,8 @@ def main(args):
                 critic = make_critic(env, exp_data, rnd_hid_size=20, hid_size=20, reward_type=args.reward, scale=25000)
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
+            elif args.env_id == "MsPacman-v0":
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
