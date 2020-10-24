@@ -2,6 +2,7 @@ import tensorflow as tf
 from baselines.common import tf_util as U
 from baselines.common.dataset import iterbatches
 from baselines import logger
+import numpy as np
 
 class RND_Critic(object):
     def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
@@ -52,17 +53,17 @@ class RND_Critic(object):
         fan_in = [4, 32, 64]
         fan_out = [32, 64, 64]
         low, high = [], []
-        for i in range(len(fan_in))
+        for i in range(len(fan_in)):
             low.append(-np.sqrt(6.0/(fan_in[i] + fan_out[i])))
             high.append(np.sqrt(6.0/(fan_in[i] + fan_out[i])))
         filters = [
-                    tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0])), minval=low[0], maxval=high[0], dtype=tf.float32),
-                    tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1])), minval=low[1], maxval=high[1], dtype=tf.float32),
-                    tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2])), minval=low[2], maxval=high[2], dtype=tf.float32)
+                    tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
+                    tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
+                    tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
                 ]
         strides = [4, 2, 1]
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
-            cnn_layer = tf.nn.conv2d(ob, filters[0], strides[0], "VALID")
+            cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == filters
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
