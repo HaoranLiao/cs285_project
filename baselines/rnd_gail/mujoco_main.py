@@ -24,7 +24,6 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-
 DATASET_PATH = "../../data/mspacman"
 # DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
@@ -40,20 +39,16 @@ def get_exp_data(expert_path):
 
 def get_exp_data_atari(expert_path):
     print("Start loading dataset...")
-    # obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
-    # acs = np.array([], dtype=np.float32).reshape(0, 9)
-    obs = []
-    acs = []
+    obs, acs = [], []
     for i in tqdm(range(5)):
         with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
             data = pickle.loads(f.read())
 
             for i in tqdm(range(len(data)), leave=False):
-                # obs = np.vstack([obs, data[i]['observation']])
                 obs.append(data[i]['observation'])
                 ac = one_hot_encoding(data[i]["action"])
                 acs.append(ac)
-                # acs = np.vstack([acs, ac])
+
     obs = np.concatenate(obs)
     acs = np.concatenate(acs)
     print("Load dataset complete!")

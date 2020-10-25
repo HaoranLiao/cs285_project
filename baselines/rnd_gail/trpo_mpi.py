@@ -221,12 +221,16 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
 
     if not mmd:
-        pass
         ### Here is the training of the critic
         reward_giver.train(*expert_dataset, iter=rnd_iter)
+
         #inspect the reward learned
         # for batch in iterbatches(expert_dataset, batch_size=32):
         #     print(reward_giver.get_reward(*batch))
+
+        reward_giver.save_trained_variables('../../params/rnd_critic')
+
+        # reward_giver.load_trained_variables('../../params/rnd_critic')
 
     best = -2000
     save_ind = 0

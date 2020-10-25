@@ -4,6 +4,8 @@ sys.path.append("../../")
 from baselines.common import tf_util as U
 from baselines.common.dataset import iterbatches
 from baselines import logger
+import baselines.common.tf_util as U
+
 import numpy as np
 from tqdm import tqdm
 
@@ -97,7 +99,6 @@ class RND_Critic(object):
     def get_trainable_variables(self):
         return tf.trainable_variables(self.scope)
 
-
     def get_reward(self, ob, ac):
         return self.reward_func(ob, ac)
     
@@ -111,6 +112,13 @@ class RND_Critic(object):
             for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
                 self._train(*data, lr)
 
+    def save_trained_variables(self, save_addr):
+        saver = tf.train.Saver(self.get_trainable_variables())
+        saver.save(U.get_session(), save_addr)
+
+    def load_trained_variables(self, load_addr):
+        saver = tf.train.Saver(self.get_trainable_variables())
+        saver.restore(U.get_session(), load_addr)
 
 class Enc_Critic(object):
     def __init__(self, ob_size, ac_size, hid_size=128, hid_layer=1, scale=250000.0, offset=0., reward_scale=1.0,
