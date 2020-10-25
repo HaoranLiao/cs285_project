@@ -26,20 +26,21 @@ class MlpPolicy(object):
             self._init(*args, **kwargs)
 
     def _init(self, ob_space, ac_space, hid_size, num_hid_layers, gaussian_fixed_var=False, popart=True):
-        assert isinstance(ob_space, gym.spaces.Box)
+        # assert isinstance(ob_space, gym.spaces.Box)
 
         self.pdtype = pdtype = make_pdtype(ac_space)
 
-        ob = U.get_placeholder(name="ob", dtype=tf.float32, shape=[None] + list(ob_space.shape))
+        ob = U.get_placeholder(name="ob", dtype=tf.float32, shape=[None] + list(ob_space))
 
         with tf.variable_scope("obfilter"):
-            self.ob_rms = RunningMeanStd(shape=ob_space.shape)
+            self.ob_rms = RunningMeanStd(shape=ob_space)
 
         with tf.variable_scope("popart"):
             self.v_rms = RunningMeanStd(shape=[1])
 
         obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
         last_out = obz
+        # Change first layer of dense to cnn_dense
         last_out = tf.nn.tanh(self.cnn_dense(last_out, hid_size, "vffc1", weight_init=U.normc_initializer(1.0)))
         for i in np.arange(1, num_hid_layers):
             last_out = tf.nn.tanh(dense(last_out, hid_size, "vffc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
@@ -50,6 +51,7 @@ class MlpPolicy(object):
             self.vpred = self.norm_vpred
 
         last_out = obz
+        # Change first layer of dense to cnn_dense
         last_out = tf.nn.tanh(self.cnn_dense(last_out, hid_size, "polfc1",  weight_init=U.normc_initializer(1.0)))
         for i in np.arange(1, num_hid_layers):
             last_out = tf.nn.tanh(dense(last_out, hid_size, "polfc%i"%(i+1),  weight_init=U.normc_initializer(1.0)))
@@ -85,7 +87,7 @@ class MlpPolicy(object):
             assert (len(tf.get_variable_scope().name.split('/')) == 2)
 
             # CNN
-            fan_in = [1, 32, 64]
+            fan_in = [4, 32, 64]
             fan_out = [32, 64, 64]
             low, high = [], []
             for i in range(len(fan_in)):

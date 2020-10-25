@@ -14,7 +14,7 @@ import gym
 import sys
 sys.path.append("../../")
 
-from baselines.rnd_gail import mlp_policy
+from baselines.rnd_gail import cnn_policy
 from baselines.common import set_global_seeds, tf_util as U
 from baselines.common.misc_util import boolean_flag
 from baselines import bench
@@ -24,8 +24,8 @@ from baselines.rnd_gail.merged_critic import make_critic
 import pickle
 
 
-# DATASET_PATH = "../../data/mspacman"
-DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
+DATASET_PATH = "../../data/mspacman"
+# DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
 def get_exp_data(expert_path):
     with open(expert_path, 'rb') as f:
@@ -169,7 +169,7 @@ def main(args):
 
     args, rnd_iter, dyn_norm = modify_args(args)
     def policy_fn(name, ob_space, ac_space,):
-        return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+        return cnn_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':

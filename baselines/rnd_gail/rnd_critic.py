@@ -9,6 +9,8 @@ import numpy as np
 class RND_Critic(object):
     def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
                  out_size=128, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd"):
+        self.ob_size = ob_size
+        self.ac_size = ac_size
         self.scope = scope
         self.scale = scale
         self.offset = offset

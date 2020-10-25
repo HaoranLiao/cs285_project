@@ -117,8 +117,10 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     np.set_printoptions(precision=3)
     # Setup losses and stuff
     # ----------------------------------------
-    ob_space = env.observation_space
-    ac_space = env.action_space
+    # ob_space = env.observation_space
+    # ac_space = env.action_space
+    ob_space = reward_giver.ob_size
+    ac_space = reward_giver.ac_size
     pi = policy_func("pi", ob_space, ac_space)
     oldpi = policy_func("oldpi", ob_space, ac_space)
     atarg = tf.placeholder(dtype=tf.float32, shape=[None])  # Target advantage function (if applicable)

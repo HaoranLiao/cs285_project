@@ -286,6 +286,8 @@ def make_pdtype(ac_space):
         return MultiCategoricalPdType(ac_space.nvec)
     elif isinstance(ac_space, spaces.MultiBinary):
         return BernoulliPdType(ac_space.n)
+    elif isinstance(ac_space, int):
+        return CategoricalPdType(ac_space)
     else:
         raise NotImplementedError
 
