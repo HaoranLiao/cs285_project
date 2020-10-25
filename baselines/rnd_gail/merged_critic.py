@@ -9,7 +9,7 @@ def make_critic(env, exp_data, hid_size=128, rnd_hid_size=128, reward_type=0, sc
     ac_size = env.action_space.n
     ob_size = exp_data[0].shape[1:]
     if reward_type == 0:
-        critic = RND_Critic(ob_size, ac_size, hid_size=hid_size, rnd_hid_size=rnd_hid_size, scale=scale)
+        critic = RND_Critic(ob_size, ac_size, hid_size=hid_size, rnd_hid_size=rnd_hid_size, scale=scale, rnd_hid_layer=1)
     elif reward_type == 1:
         critic = Enc_Critic(ob_size, ac_size, hid_size=hid_size, scale=scale)
     else:
