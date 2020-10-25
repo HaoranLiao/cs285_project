@@ -5,6 +5,7 @@ from baselines.common import tf_util as U
 from baselines.common.dataset import iterbatches
 from baselines import logger
 import numpy as np
+from tqdm import tqdm
 
 class RND_Critic(object):
     def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
@@ -106,7 +107,7 @@ class RND_Critic(object):
 
     def train(self, ob, ac, batch_size=32, lr=0.001, iter=200):
         logger.info("Training RND Critic")
-        for _ in range(iter):
+        for _ in tqdm(range(iter)):
             for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
                 self._train(*data, lr)
 

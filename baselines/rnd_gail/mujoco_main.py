@@ -39,18 +39,25 @@ def get_exp_data(expert_path):
 
 
 def get_exp_data_atari(expert_path):
-    with open(expert_path, 'rb') as f:
-        data = pickle.loads(f.read())
-        data = data[:3]
+    print("Start loading dataset...")
+    # obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
+    # acs = np.array([], dtype=np.float32).reshape(0, 9)
+    obs = []
+    acs = []
+    for i in tqdm(range(5)):
+        with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
+            data = pickle.loads(f.read())
 
-        obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
-        acs = np.array([], dtype=np.float32).reshape(0, 9)
-        for i in range(len(data)):
-            obs = np.vstack([obs, data[i]['observation']])
-            ac = one_hot_encoding(data[i]["action"])
-            acs = np.vstack([acs, ac])
-
-        return [obs, acs]
+            for i in tqdm(range(len(data)), leave=False):
+                # obs = np.vstack([obs, data[i]['observation']])
+                obs.append(data[i]['observation'])
+                ac = one_hot_encoding(data[i]["action"])
+                acs.append(ac)
+                # acs = np.vstack([acs, ac])
+    obs = np.concatenate(obs)
+    acs = np.concatenate(acs)
+    print("Load dataset complete!")
+    return [obs, acs]
 
 
 Log_dir = osp.expanduser("~/workspace/log/mujoco")
@@ -174,7 +181,7 @@ def main(args):
     if args.task == 'train':
 
         if args.env_id == "MsPacman-v0":
-            exp_data = get_exp_data_atari(DATASET_PATH + '/expert_data_0.pkl')
+            exp_data = get_exp_data_atari(DATASET_PATH)
         else:
             exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
 
