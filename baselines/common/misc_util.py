@@ -262,3 +262,8 @@ def pickle_load(path, compression=False):
     else:
         with open(path, "rb") as f:
             return pickle.load(f)
+
+def one_hot_encoding(data):
+    onehot = np.zeros((len(data), 9))
+    onehot[np.arange(len(data)), data.astype(int) if type(data) is np.ndarray else data] = 1
+    return onehot

@@ -5,6 +5,7 @@ Disclaimer: this code is highly based on trpo_mpi at @openai/baselines and @open
 import argparse
 import os.path as osp
 import logging
+from IPython.lib.security import passwd
 from mpi4py import MPI
 from tqdm import tqdm
 
@@ -16,7 +17,7 @@ sys.path.append("../../")
 
 from baselines.rnd_gail import cnn_policy
 from baselines.common import set_global_seeds, tf_util as U
-from baselines.common.misc_util import boolean_flag
+from baselines.common.misc_util import boolean_flag, one_hot_encoding
 from baselines import bench
 from baselines import logger
 from baselines.rnd_gail.merged_critic import make_critic
@@ -34,22 +35,20 @@ def get_exp_data(expert_path):
         data["actions"] = np.squeeze(data["actions"])
         data["observations"] = data["observations"]
 
-        # print(data["observations"].shape)
-        # print(data["actions"].shape)
         return [data["observations"], data["actions"]]
+
 
 def get_exp_data_atari(expert_path):
     with open(expert_path, 'rb') as f:
         data = pickle.loads(f.read())
         data = data[:3]
 
-        num_traj = len(data)
         obs = np.array([], dtype=np.float32).reshape(0, 84, 84, 4)
-        acs = np.array([], dtype=np.float32).reshape(0)
-        for i in range(num_traj):
-
+        acs = np.array([], dtype=np.float32).reshape(0, 9)
+        for i in range(len(data)):
             obs = np.vstack([obs, data[i]['observation']])
-            acs = np.concatenate([acs, data[i]["action"]])
+            ac = one_hot_encoding(data[i]["action"])
+            acs = np.vstack([acs, ac])
 
         return [obs, acs]
 

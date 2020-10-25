@@ -18,6 +18,7 @@ from ..common.mpi_adam import MpiAdam
 from ..common.cg import cg
 from ..gail.statistics import stats
 from ..common.dataset_plus import iterbatches
+from ..common.misc_util import one_hot_encoding
 
 
 def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
@@ -29,6 +30,10 @@ def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
     rew = 0.0
     true_rew = 0.0
     ob = env.reset()
+    obs_buffer = []
+    obs_buffer.extend([np.zeros_like(ob)] * 3)
+    obs_buffer.append(ob)
+    ob = np.concatenate(obs_buffer[-4:], axis=-1)
 
     cur_ep_ret = 0
     cur_ep_len = 0
@@ -69,8 +74,11 @@ def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
         acs[i] = ac
         prevacs[i] = prevac
 
-        rew = reward_giver.get_reward(ob, ac)
+        ac_onehot = one_hot_encoding([ac])
+        rew = reward_giver.get_reward(ob, ac_onehot)
         ob, true_rew, new, _ = env.step(ac)
+        obs_buffer.append(ob)
+        ob = np.concatenate(obs_buffer[-4:], axis=-1)
         rews[i] = rew
         true_rews[i] = true_rew
 
@@ -85,6 +93,10 @@ def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
             cur_ep_true_ret = 0
             cur_ep_len = 0
             ob = env.reset()
+            obs_buffer = []
+            obs_buffer.extend([np.zeros_like(ob)] * 3)
+            obs_buffer.append(ob)
+            ob = np.concatenate(obs_buffer[-4:], axis=-1)
         t += 1
 
 
@@ -209,6 +221,8 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
 
     if not mmd:
+        pass
+        ### Here is the training of the critic
         reward_giver.train(*expert_dataset, iter=rnd_iter)
         #inspect the reward learned
         # for batch in iterbatches(expert_dataset, batch_size=32):
