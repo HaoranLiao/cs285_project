@@ -174,16 +174,20 @@ class TensorBoardOutputFormat(KVWriter):
 
 def make_output_format(format, ev_dir, log_suffix=''):
     os.makedirs(ev_dir, exist_ok=True)
+
+    timeObj = time.localtime(time.time())
+    time_stamp = '%d-%d-%d-%d-%d-%d' % (timeObj.tm_mday, timeObj.tm_mon, timeObj.tm_year, timeObj.tm_hour, timeObj.tm_min, timeObj.tm_sec)
+
     if format == 'stdout':
         return HumanOutputFormat(sys.stdout)
     elif format == 'log':
-        return HumanOutputFormat(osp.join(ev_dir, 'log%s.txt' % log_suffix))
+        return HumanOutputFormat(osp.join(ev_dir, 'log%s_%s.txt' % (log_suffix, time_stamp)))
     elif format == 'json':
-        return JSONOutputFormat(osp.join(ev_dir, 'progress%s.json' % log_suffix))
+        return JSONOutputFormat(osp.join(ev_dir, 'progress%s_%s.json' % (log_suffix, time_stamp)))
     elif format == 'csv':
-        return CSVOutputFormat(osp.join(ev_dir, 'progress%s.csv' % log_suffix))
+        return CSVOutputFormat(osp.join(ev_dir, 'progress%s_%s.csv' % (log_suffix, time_stamp)))
     elif format == 'tensorboard':
-        return TensorBoardOutputFormat(osp.join(ev_dir, 'tb%s' % log_suffix))
+        return TensorBoardOutputFormat(osp.join(ev_dir, 'tb%s_%s' % (log_suffix, time_stamp)))
     else:
         raise ValueError('Unknown format specified: %s' % (format,))
 
