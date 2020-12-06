@@ -1,7 +1,9 @@
-from tensorflow.python.ops.gen_batch_ops import Batch
+
 from VAE import VariationalAutoencoder
+from AE import Autoencoder
 from utils import *
 from sklearn.model_selection import train_test_split
+import time
 
 # CIFAR10 samples
 # x = read_cifar_data(range(1,6))
@@ -33,12 +35,21 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
                 training_epochs: No. of training epochs.
                 display_steps: Display for every (display_steps) no. of steps.
     """    
-    vae = VariationalAutoencoder(image_dim,
-                                 conv_layer_specs,
-                                 dense_layer_specs,
-                                 latent_dim,
-                                 learning_rate,
-                                 use_shared_weights=use_shared_weights)
+    # vae = VariationalAutoencoder(image_dim,
+    #                              conv_layer_specs,
+    #                              dense_layer_specs,
+    #                              latent_dim,
+    #                              learning_rate,
+    #                              use_shared_weights=use_shared_weights)
+    vae = Autoencoder(image_dim,
+                      conv_layer_specs,
+                      dense_layer_specs,
+                      latent_dim,
+                      learning_rate,
+                      use_shared_weights=use_shared_weights)
+# Load model for continue training
+    # vae.load_model("model")
+    # print("Loaded model from 'model'")
 # Train and test data generators
     train_gen = BatchGenerator(x_train, batch_size)
     test_gen = BatchGenerator(x_test, batch_size)
@@ -48,6 +59,7 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
     best_val_cost = 1e10
     best_epoch_num = 0
     for epoch in range(training_epochs):
+        epoch_start_time = time.time()
         total_cost = 0.
         total_batches = int(n_samples/batch_size)
     # Loop over all batches
@@ -63,13 +75,15 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
         val_data = test_gen.get_all_data()
         total_val_cost = vae.evaluate(val_data)
 
+
     # Display and log
         with open("cost_record.csv", "a") as f:
             f.write("%4d, %.9f, %.9f\n" % (epoch + 1, total_cost, total_val_cost))
         if (epoch + 1) % display_step == 0:
             print ("Epoch:", '%04d' % (epoch+1),
                    "cost=", "{:.9f}".format(total_cost),
-                   "val_cost=", "{:.9f}".format(total_val_cost))
+                   "val_cost=", "{:.9f}".format(total_val_cost),
+                   "epoch_time=", time.time() - epoch_start_time)
         if total_val_cost < best_val_cost:
             best_val_cost = total_val_cost
             best_epoch_num = epoch + 1
@@ -78,4 +92,4 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
     return vae
 
 if __name__ == "__main__":
-    train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000], 128, learning_rate=0.0001, batch_size=128, use_shared_weights=False ,training_epochs=100, display_step=5)
+    train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000, 500], 100, learning_rate=0.0003, batch_size=64, use_shared_weights=False ,training_epochs=200, display_step=5)
