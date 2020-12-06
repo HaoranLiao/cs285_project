@@ -4,6 +4,11 @@ This script provides learning curves visualization for the RED experiments
 
 import sys
 import matplotlib.pyplot as plt
+import os
+import matplotlib as mpl
+if os.environ.get('DISPLAY','') == '':
+    print('no display found. Using non-interactive Agg backend')
+    mpl.use('Agg')
 import re
 import pandas as pd
 
