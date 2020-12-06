@@ -24,7 +24,7 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-DATASET_PATH = "../../data/mspacman"
+DATASET_PATH = "/state/partition1/home/haoranliao/expert_data"
 # DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
 def get_exp_data(expert_path):
@@ -40,7 +40,7 @@ def get_exp_data(expert_path):
 def get_exp_data_atari(expert_path):
     print("Start loading dataset...")
     obs, acs = [], []
-    for i in tqdm(range(5)):
+    for i in tqdm(range(1)):
         with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
             data = pickle.loads(f.read())
 
