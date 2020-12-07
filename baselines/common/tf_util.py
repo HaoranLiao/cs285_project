@@ -52,10 +52,10 @@ def cnn():
         tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
         tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
         tf.Variable(tf.random_uniform((4, 4, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32)),
-        tf.Variable(tf.random_uniform((2, 2, fan_in[3], fan_out[3]), minval=low[3], maxval=high[3], dtype=tf.float32)),
+        tf.Variable(tf.random_uniform((3, 3, fan_in[3], fan_out[3]), minval=low[3], maxval=high[3], dtype=tf.float32)),
         tf.Variable(tf.random_uniform((2, 2, fan_in[4], fan_out[4]), minval=low[4], maxval=high[4], dtype=tf.float32))
     ]
-    strides = [[1, 4, 4, 1], [1, 4, 4, 1], [1, 4, 4, 1], [1, 2, 2, 1], [1, 2, 2, 1]]  # [batch, x, y, channel]
+    strides = [[1, 2, 2, 1], [1, 1, 1, 1], [1, 1, 1, 1], [1, 2, 2, 1], [1, 2, 2, 1]]  # [batch, x, y, channel]
     cnn_type = 2
 
 
