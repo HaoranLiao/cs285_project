@@ -49,19 +49,20 @@ class RND_Critic(object):
         self._train = U.function([ob, ac, lr], [], updates=[self.trainer.apply_gradients(gvs)])
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
-        # observation 84*84*4
-        fan_in = [4, 32, 64]
-        fan_out = [32, 64, 64]
-        low, high = [], []
-        for i in range(len(fan_in)):
-            low.append(-np.sqrt(6.0/(fan_in[i] + fan_out[i])))
-            high.append(np.sqrt(6.0/(fan_in[i] + fan_out[i])))
-        filters = [
-                    tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
-                    tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
-                    tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
-        ]
-        strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]] # batch, x, y, channel
+        # # observation 84*84*4
+        # fan_in = [4, 32, 64]
+        # fan_out = [32, 64, 64]
+        # low, high = [], []
+        # for i in range(len(fan_in)):
+        #     low.append(-np.sqrt(6.0/(fan_in[i] + fan_out[i])))
+        #     high.append(np.sqrt(6.0/(fan_in[i] + fan_out[i])))
+        # filters = [
+        #             tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
+        #             tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
+        #             tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
+        # ]
+        # strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]] # batch, x, y, channel
+        filters, strides = U.cnn()
         
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")

@@ -86,19 +86,20 @@ class MlpPolicy(object):
         with tf.variable_scope(name, reuse=reuse):
             assert (len(tf.get_variable_scope().name.split('/')) == 2)
 
-            # CNN
-            fan_in = [4, 32, 64]
-            fan_out = [32, 64, 64]
-            low, high = [], []
-            for i in range(len(fan_in)):
-                low.append(-np.sqrt(6.0/(fan_in[i] + fan_out[i])))
-                high.append(np.sqrt(6.0/(fan_in[i] + fan_out[i])))
-            filters = [
-                        tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
-                        tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
-                        tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
-            ]
-            strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]]
+            # # CNN
+            # fan_in = [4, 32, 64]
+            # fan_out = [32, 64, 64]
+            # low, high = [], []
+            # for i in range(len(fan_in)):
+            #     low.append(-np.sqrt(6.0/(fan_in[i] + fan_out[i])))
+            #     high.append(np.sqrt(6.0/(fan_in[i] + fan_out[i])))
+            # filters = [
+            #             tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
+            #             tf.Variable(tf.random_uniform((4, 4, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
+            #             tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
+            # ]
+            # strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]]
+            filters, strides = U.cnn()
             
             cnn_layer = tf.nn.conv2d(x, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)

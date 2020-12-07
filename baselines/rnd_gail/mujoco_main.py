@@ -96,11 +96,11 @@ def get_task_name(args):
     task_name = args.env_id.split("-")[0]
     if args.pretrained:
         task_name += "pretrained."
-    task_name +="gamma_%f." % args.gamma
-    task_name += ".seed_" + str(args.seed)
-    task_name += ".reward_" + str(args.reward)
-    task_name += "kl_" + str(args.max_kl)
-    task_name += "g_"+str(args.g_step)
+    task_name +="_gamma%f" % args.gamma
+    task_name += "_seed" + str(args.seed)
+    task_name += "_reward" + str(args.reward)
+    task_name += "_kl" + str(args.max_kl)
+    task_name += "_g"+str(args.g_step)
 
     return task_name
 
@@ -182,6 +182,10 @@ def main(args):
 
 
         task_name = get_task_name(args)
+
+        _, _, cnn_type = U.cnn()
+        task_name += "_cnn"+str(cnn_type)
+
         logger.configure(dir=log_dir, log_suffix=task_name, format_strs=["log", "stdout"])
         if args.reward == 0:
             if args.env_id == "Humanoid-v2":
