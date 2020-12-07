@@ -62,7 +62,7 @@ class RND_Critic(object):
         #             tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
         # ]
         # strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]] # batch, x, y, channel
-        filters, strides = U.cnn()
+        filters, strides, _ = U.cnn()
         
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")

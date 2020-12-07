@@ -99,7 +99,7 @@ class MlpPolicy(object):
             #             tf.Variable(tf.random_uniform((3, 3, fan_in[2], fan_out[2]), minval=low[2], maxval=high[2], dtype=tf.float32))
             # ]
             # strides = [[1,4,4,1], [1,2,2,1], [1,1,1,1]]
-            filters, strides = U.cnn()
+            filters, strides, _ = U.cnn()
             
             cnn_layer = tf.nn.conv2d(x, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
