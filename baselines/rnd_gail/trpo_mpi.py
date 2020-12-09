@@ -239,7 +239,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
         for batch in iterbatches(inspection_set, batch_size=100):
             logger.log(reward_giver.get_reward(*batch))
 
-        exit()
+        # exit()
 
     best = -2000
     save_ind = 0
