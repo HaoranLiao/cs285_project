@@ -50,7 +50,6 @@ class RND_Critic(object):
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
         filters, strides, _ = U.cnn()
-        
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
@@ -59,18 +58,7 @@ class RND_Critic(object):
             ob = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis
 
             layer = tf.concat([ob, ac], axis=1)
-            dense_in = [int(layer.shape[1])]
-            dense_out = [64]
-            low, high = [], []
-            for i in range(len(dense_in)):
-                low.append(-np.sqrt(6.0/(dense_in[i] + dense_out[i])))
-                high.append(np.sqrt(6.0/(dense_in[i] + dense_out[i])))
-            weights = [
-                        tf.Variable(tf.random_uniform((dense_in[0], dense_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32))
-            ]
-            biases = [
-                        tf.Variable(tf.zeros([dense_out[0]]), dtype=tf.float32)
-            ]
+            weights, biases, _ = U.dense(layer, hid_layer)
             for i in range(hid_layer - 1):
                 layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
                 layer = tf.nn.relu(layer)

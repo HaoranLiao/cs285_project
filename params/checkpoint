@@ -1,2 +1,0 @@
-model_checkpoint_path: "rnd_critic"
-all_model_checkpoint_paths: "rnd_critic"

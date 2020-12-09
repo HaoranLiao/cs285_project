@@ -104,9 +104,36 @@ def cnn():
     # strides = [[1, 2, 2, 1], [1, 4, 4, 1], [1, 2, 2, 1]]  # batch, x, y, channel
     # cnn_type = 5
 
-
     return filters, strides, cnn_type
 
+def dense(layer, hid_layer):
+    if hid_layer == 1:
+        dense_in = [int(layer.shape[1])]
+        dense_out = [64]
+        print("hid_layer 1")
+    elif hid_layer == 2:
+        dense_in = [int(layer.shape[1]), 128]
+        dense_out = [128, 64]
+        print("hid_layer 2")
+    elif hid_layer == 4:
+        dense_in = [int(layer.shape[1]), 512, 256, 128]
+        dense_out = [512, 256, 128, 64]
+        print("hid_layer 4")
+    else:
+        raise Exception("number of dense layer not constructed")
+
+    low, high = [], []
+    for i in range(len(dense_in)):
+        low.append(-np.sqrt(6.0/(dense_in[i] + dense_out[i])))
+        high.append(np.sqrt(6.0/(dense_in[i] + dense_out[i])))
+
+    weights = [tf.Variable(tf.random_uniform((dense_in[0], dense_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32))]
+    biases = [tf.Variable(tf.zeros([dense_out[0]]), dtype=tf.float32)]
+    for i in np.arange(1, len(dense_in)):
+        weights.append(tf.Variable(tf.random_uniform((dense_in[i], dense_out[i]), minval=low[i], maxval=high[i], dtype=tf.float32)))
+        biases.append(tf.Variable(tf.zeros([dense_out[i]]), dtype=tf.float32))
+
+    return weights, biases, hid_layer
 
 def switch(condition, then_expression, else_expression):
     """Switches between two operations depending on a scalar value (int or bool).
