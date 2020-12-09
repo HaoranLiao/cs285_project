@@ -222,18 +222,22 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     if not mmd:
         ### Here is the training of the critic
-        reward_giver.train(*expert_dataset, iter=rnd_iter)
+        # reward_giver.train(*expert_dataset, iter=rnd_iter)
 
-        reward_giver.save_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2/rnd_critic')
+        # reward_giver.save_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic')
 
-        # reward_giver.load_trained_variables('../../params/rnd_critic')
-        # print('RND Critic Loaded')
+        reward_giver.load_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic')
+        logger.log('RND Critic Loaded')
 
         # inspect the reward learned
+        indices = np.arange(len(expert_dataset[0]))
+        np.random.shuffle(indices)
+        expert_dataset[0], expert_dataset[1] = expert_dataset[0][indices], expert_dataset[1][indices]
         inspection_set = [expert_dataset[0][:1000], expert_dataset[1][:1000]]
         # for batch in iterbatches(expert_dataset, batch_size=32):
+        logger.log('Inspect reward_giver:')
         for batch in iterbatches(inspection_set, batch_size=100):
-            print(reward_giver.get_reward(*batch))
+            logger.log(reward_giver.get_reward(*batch))
 
         exit()
 

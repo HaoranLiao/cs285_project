@@ -20,8 +20,9 @@ from ..common.dataset_plus import normalize, denormalize
 class MlpPolicy(object):
     recurrent = False
 
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name, policy_cnn_type, *args, **kwargs):
         self.scope = name
+        self.policy_cnn_type = policy_cnn_type
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             self._init(*args, **kwargs)
 
@@ -87,7 +88,7 @@ class MlpPolicy(object):
             assert (len(tf.get_variable_scope().name.split('/')) == 2)
 
             # CNN
-            filters, strides, _ = U.cnn()
+            filters, strides, _ = U.cnn(self.policy_cnn_type)
             
             cnn_layer = tf.nn.conv2d(x, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)

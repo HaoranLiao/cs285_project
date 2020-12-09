@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 class RND_Critic(object):
     def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
-                 out_size=128, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd"):
+                 out_size=128, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd", rnd_cnn_type=1):
         self.ob_size = ob_size
         self.ac_size = ac_size
         self.scope = scope
@@ -23,6 +23,7 @@ class RND_Critic(object):
         self.hid_size = hid_size
         self.hid_layer = hid_layer
         self.reward_scale = reward_scale
+        self.rnd_cnn_type = rnd_cnn_type
         print("RND Critic")
 
         ob = tf.placeholder(tf.float32, (None,) + ob_size)
@@ -49,7 +50,7 @@ class RND_Critic(object):
         self._train = U.function([ob, ac, lr], [], updates=[self.trainer.apply_gradients(gvs)])
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
-        filters, strides, _ = U.cnn()
+        filters, strides, _ = U.cnn(self.rnd_cnn_type)
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)

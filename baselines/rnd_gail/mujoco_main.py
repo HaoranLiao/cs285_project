@@ -89,6 +89,8 @@ def argsparser():
     parser.add_argument('--gamma', help='Discount factor', type=float, default=0.97)
     boolean_flag(parser, 'popart', default=True, help='Use popart on V function')
     parser.add_argument('--reward', help='Reward Type', type=int, default=0)
+    parser.add_argument('--rnd_cnn_type', help='RND Critic CNN Structure', type=int, default=1)
+    parser.add_argument('--policy_cnn_type', help='Agent CNN Structure', type=int, default=1)
     return parser.parse_args()
 
 
@@ -170,8 +172,9 @@ def main(args):
 
     args, rnd_iter, dyn_norm = modify_args(args)
     def policy_fn(name, ob_space, ac_space,):
-        return cnn_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-                                    hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
+        return cnn_policy.MlpPolicy(name=name, policy_cnn_type=args.policy_cnn_type, ob_space=ob_space, ac_space=ac_space,
+                                    hid_size=args.policy_hidden_size, num_hid_layers=3, 
+                                    popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
 
@@ -183,8 +186,7 @@ def main(args):
 
         task_name = get_task_name(args)
 
-        _, _, cnn_type = U.cnn()
-        task_name += "_cnn"+str(cnn_type)
+        task_name += "_rndcnn"+str(args.rnd_cnn_type) + "_mlpcnn"+str(args.policy_cnn_type)
 
         logger.configure(dir=log_dir, log_suffix=task_name, format_strs=["log", "stdout"])
         if args.reward == 0:
@@ -197,7 +199,7 @@ def main(args):
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
             elif args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
@@ -212,7 +214,7 @@ def main(args):
             if args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
             if args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
 
 
         train(env,
