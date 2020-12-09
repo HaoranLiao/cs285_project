@@ -10,6 +10,7 @@ from collections import deque
 
 import tensorflow as tf
 import numpy as np
+import gym
 
 from ..common import tf_util as U
 from ..common import explained_variance, zipsame, dataset, fmt_row
@@ -18,10 +19,10 @@ from ..common.mpi_adam import MpiAdam
 from ..common.cg import cg
 from ..gail.statistics import stats
 from ..common.dataset_plus import iterbatches
-from ..common.misc_util import one_hot_encoding
+from ..common.misc_util import one_hot_encoding, get_wrapper_by_name
 
 
-def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
+def traj_segment_generator_cnn(pi, env, reward_giver, horizon, stochastic):
 
     # Initialize state variables
     t = 0
@@ -99,6 +100,76 @@ def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
             ob = np.concatenate(obs_buffer[-4:], axis=-1)
         t += 1
 
+def traj_segment_generator(pi, env, reward_giver, horizon, stochastic):
+
+    # Initialize state variables
+    t = 0
+    ac = env.action_space.sample()
+    new = True
+    rew = 0.0
+    true_rew = 0.0
+    ob = env.reset()
+
+    cur_ep_ret = 0
+    cur_ep_len = 0
+    cur_ep_true_ret = 0
+    ep_true_rets = []
+    ep_rets = []
+    ep_lens = []
+
+    # Initialize history arrays
+    obs = np.array([ob for _ in range(horizon)])
+    true_rews = np.zeros(horizon, 'float32')
+    rews = np.zeros(horizon, 'float32')
+    vpreds = np.zeros(horizon, 'float32')
+    news = np.zeros(horizon, 'int32')
+    acs = np.array([ac for _ in range(horizon)])
+    prevacs = acs.copy()
+
+    while True:
+        prevac = ac
+        ac, vpred = pi.act(stochastic, ob)
+        # Slight weirdness here because we need value function at time T
+        # before returning segment [0, T-1] so we get the correct
+        # terminal value
+        if t > 0 and t % horizon == 0:
+            yield {"ob": obs, "rew": rews, "vpred": vpreds, "new": news,
+                   "ac": acs, "prevac": prevacs, "nextvpred": vpred * (1 - new),
+                   "ep_rets": ep_rets, "ep_lens": ep_lens, "ep_true_rets": ep_true_rets}
+            _, vpred = pi.act(stochastic, ob)
+            # Be careful!!! if you change the downstream algorithm to aggregate
+            # several of these batches, then be sure to do a deepcopy
+            ep_rets = []
+            ep_true_rets = []
+            ep_lens = []
+        i = t % horizon
+        obs[i] = ob
+        vpreds[i] = vpred
+        news[i] = new
+        acs[i] = ac
+        prevacs[i] = prevac
+
+        if type(env.action_space) is gym.spaces.Discrete:
+            ac_onehot = one_hot_encoding([ac])
+            rew = reward_giver.get_reward(ob, ac_onehot)
+        else:
+            rew = reward_giver.get_reward(ob, ac)
+        ob, true_rew, new, _ = env.step(ac)
+        rews[i] = rew
+        true_rews[i] = true_rew
+
+        cur_ep_ret += rew
+        cur_ep_true_ret += true_rew
+        cur_ep_len += 1
+        if new:
+            ep_rets.append(cur_ep_ret)
+            ep_true_rets.append(cur_ep_true_ret)
+            ep_lens.append(cur_ep_len)
+            cur_ep_ret = 0
+            cur_ep_true_ret = 0
+            cur_ep_len = 0
+            ob = env.reset()
+        t += 1
 
 def add_vtarg_and_adv(seg, gamma, lam):
     new = np.append(seg["new"], 0)  # last element is only used for last vtarg, but we already zeroed it if last new = 1
@@ -122,17 +193,19 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
           max_kl, cg_iters, cg_damping=1e-2,
           vf_stepsize=3e-4, d_stepsize=3e-4, vf_iters=3,
           max_timesteps=0, max_episodes=0, max_iters=0, rnd_iter=200,
-          callback=None, dyn_norm=False, mmd=False):
+          callback=None, dyn_norm=False, mmd=False, use_CNN=False):
 
     nworkers = MPI.COMM_WORLD.Get_size()
     rank = MPI.COMM_WORLD.Get_rank()
     np.set_printoptions(precision=3)
     # Setup losses and stuff
     # ----------------------------------------
-    # ob_space = env.observation_space
-    # ac_space = env.action_space
-    ob_space = reward_giver.ob_size
-    ac_space = reward_giver.ac_size
+    if use_CNN:
+        ob_space = reward_giver.ob_size
+        ac_space = reward_giver.ac_size
+    else:
+        ob_space = env.observation_space
+        ac_space = env.action_space
     pi = policy_func("pi", ob_space, ac_space)
     oldpi = policy_func("oldpi", ob_space, ac_space)
     atarg = tf.placeholder(dtype=tf.float32, shape=[None])  # Target advantage function (if applicable)
@@ -199,7 +272,10 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     # Prepare for rollouts
     # ----------------------------------------
-    seg_gen = traj_segment_generator(pi, env, reward_giver, timesteps_per_batch, stochastic=True)
+    if use_CNN:
+        seg_gen = traj_segment_generator_cnn(pi, env, reward_giver, timesteps_per_batch, stochastic=True)
+    else:
+        seg_gen = traj_segment_generator(pi, env, reward_giver, timesteps_per_batch, stochastic=True)
 
     episodes_so_far = 0
     timesteps_so_far = 0
@@ -241,6 +317,11 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
         # exit()
 
+        reward_giver.save_trained_variables('../../params/rnd_critic')
+
+
+        # reward_giver.load_trained_variables('../../params/rnd_critic')
+
     best = -2000
     save_ind = 0
     max_save = 3
@@ -276,10 +357,18 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             lenbuffer.extend(lens)
             rewbuffer.extend(rews)
 
+            #get env returns
+            episode_rewards = get_wrapper_by_name(env, "Monitor").get_episode_rewards()
+            if len(episode_rewards) > 0:
+                mean_episode_reward = np.mean(episode_rewards[-100:])
+            else:
+                mean_episode_reward = np.nan
+
             true_rew_avg = np.mean(true_rewbuffer)
             logger.record_tabular("EpLenMean", np.mean(lenbuffer))
             logger.record_tabular("EpRewMean", np.mean(rewbuffer))
             logger.record_tabular("EpTrueRewMean", true_rew_avg)
+            logger.record_tabular("EpMeanReturn(100 ep)", mean_episode_reward)
             logger.record_tabular("EpThisIter", len(lens))
             episodes_so_far += len(lens)
             timesteps_so_far += sum(lens)

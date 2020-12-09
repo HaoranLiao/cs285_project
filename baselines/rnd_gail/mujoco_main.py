@@ -15,7 +15,7 @@ import gym
 import sys
 sys.path.append("../../")
 
-from baselines.rnd_gail import cnn_policy
+from baselines.rnd_gail import cnn_policy, mlp_policy
 from baselines.common import set_global_seeds, tf_util as U
 from baselines.common.misc_util import boolean_flag, one_hot_encoding
 from baselines import bench
@@ -24,7 +24,7 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-DATASET_PATH = "/state/partition1/home/haoranliao/expert_data"
+DATASET_PATH = "/home/jerry/data2/cs285_final_proj/cs285_project/data/mspacman"
 # DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
 def get_exp_data(expert_path):
@@ -37,7 +37,7 @@ def get_exp_data(expert_path):
         return [data["observations"], data["actions"]]
 
 
-def get_exp_data_atari(expert_path):
+def get_exp_data_atari(expert_path, ae=None):
     print("Start loading dataset...")
     obs, acs = [], []
     for i in tqdm(range(5)):
@@ -50,6 +50,14 @@ def get_exp_data_atari(expert_path):
                 acs.append(ac)
 
     obs = np.concatenate(obs)
+    if ae is not None:
+        batch_size = 500
+        obs_encoded = []
+        i = 0
+        while(i * batch_size < len(obs)):
+            obs_encoded.append(ae.encode(obs[i * batch_size: (i + 1) * batch_size] / 255))
+            i += 1
+        obs = np.concatenate(obs_encoded)
     acs = np.concatenate(acs)
     print("Load dataset complete!")
     return [obs, acs]
@@ -74,6 +82,8 @@ def argsparser():
     parser.add_argument('--g_step', help='number of steps to train policy in each epoch', type=int, default=3)
     parser.add_argument('--d_step', help='number of steps to train discriminator in each epoch', type=int, default=1)
     # Network Configuration (Using MLP Policy)
+    boolean_flag(parser, 'use_cnn', default=False, help='use cnn for the policy network and the critic')
+    boolean_flag(parser, 'encode_1d_obs', default=False, help='use a (variational) autoencoder to encode 2d observations into 1d state representations')
     parser.add_argument('--policy_hidden_size', type=int, default=100)
     parser.add_argument('--adversary_hidden_size', type=int, default=100)
     # Algorithms Configuration
@@ -153,8 +163,21 @@ def main(args):
     set_global_seeds(args.seed)
     env = gym.make(args.env_id)
     if args.env_id == "MsPacman-v0":
+        from gym import wrappers
+        env = wrappers.Monitor(
+                env,
+                "/tmp",
+                force=True,
+                video_callable=False,
+            )
         from baselines.common.wrappers import wrap_deepmind
         env = wrap_deepmind(env)
+    if args.encode_1d_obs:
+        from vae.AE import Autoencoder
+        from baselines.common.vae_encoding_wrapper import VAEEncodingWrapper
+        ae = Autoencoder((84,84,4), [(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000,500], 100)
+        ae.load_model("../../vae/runs/5e-4decay/model")
+        env = VAEEncodingWrapper(env, ae)
     env.seed(args.seed)
 
     # env = bench.Monitor(env, logger.get_dir() and
@@ -171,15 +194,23 @@ def main(args):
         save_dir = Checkpoint_dir
 
     args, rnd_iter, dyn_norm = modify_args(args)
-    def policy_fn(name, ob_space, ac_space,):
-        return cnn_policy.MlpPolicy(name=name, policy_cnn_type=args.policy_cnn_type, ob_space=ob_space, ac_space=ac_space,
-                                    hid_size=args.policy_hidden_size, num_hid_layers=3, 
-                                    popart=args.popart, gaussian_fixed_var=args.fixed_var)
+    def policy_fn(name, ob_space, ac_space):
+        return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+                                    hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
+
+            
+
+    def policy_fn_cnn(name, ob_space, ac_space):
+        return cnn_policy.CNNPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+                                    hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
 
         if args.env_id == "MsPacman-v0":
-            exp_data = get_exp_data_atari(DATASET_PATH)
+            if args.encode_1d_obs:
+                exp_data = get_exp_data_atari(DATASET_PATH, ae)
+            else:
+                exp_data = get_exp_data_atari(DATASET_PATH)
         else:
             exp_data = get_exp_data(osp.join(osp.dirname(osp.realpath(__file__)), "../../data/%s.pkl" % args.env_id))
 
@@ -199,7 +230,7 @@ def main(args):
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
             elif args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, CNN_critic=args.use_cnn)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
@@ -216,10 +247,13 @@ def main(args):
             if args.env_id == "MsPacman-v0":
                 critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
 
-
+        if args.use_cnn:
+            policy = policy_fn_cnn
+        else:
+            policy = policy_fn
         train(env,
               args.seed,
-              policy_fn,
+              policy,
               critic,
               exp_data,
               args.g_step,
@@ -232,7 +266,8 @@ def main(args):
               args.gamma,
               rnd_iter,
               dyn_norm,
-              task_name
+              task_name,
+              args.use_cnn
               )
     elif args.task == 'evaluate':
         runner(env,
@@ -250,7 +285,7 @@ def main(args):
 
 def train(env, seed, policy_fn, reward_giver, dataset,
           g_step, d_step, policy_entcoeff, num_timesteps,
-          checkpoint_dir, pretrained, BC_max_iter, gamma, rnd_iter, dyn_norm, task_name=None):
+          checkpoint_dir, pretrained, BC_max_iter, gamma, rnd_iter, dyn_norm, task_name=None, use_CNN=False):
 
     pretrained_weight = None
     if pretrained and (BC_max_iter > 0):
@@ -277,7 +312,7 @@ def train(env, seed, policy_fn, reward_giver, dataset,
                    max_kl=args.max_kl, cg_iters=10, cg_damping=0.1,
                    gamma=gamma, lam=0.97,
                    vf_iters=5, vf_stepsize=1e-3,
-                   task_name=task_name, rnd_iter=rnd_iter, dyn_norm=dyn_norm, mmd=args.reward==2)
+                   task_name=task_name, rnd_iter=rnd_iter, dyn_norm=dyn_norm, mmd=args.reward==2, use_CNN=use_CNN)
 
 
 def runner(env, policy_func, load_model_path, timesteps_per_batch, number_trajs,

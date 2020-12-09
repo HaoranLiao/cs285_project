@@ -92,4 +92,4 @@ def train(conv_layer_specs, dense_layer_specs, latent_dim, learning_rate=0.01,
     return vae
 
 if __name__ == "__main__":
-    train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000, 500], 100, learning_rate=0.0003, batch_size=64, use_shared_weights=False ,training_epochs=200, display_step=5)
+    train([(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000, 500], 100, learning_rate=0.0005, batch_size=64, use_shared_weights=False ,training_epochs=200, display_step=5)

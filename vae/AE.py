@@ -246,8 +246,8 @@ class Autoencoder:
         reconstructed_x_flatten = tf.reshape(self.recon, (tf.shape(self.recon)[0], -1))
         recon_loss = tf.reduce_sum(tf.square(x_flatten - reconstructed_x_flatten), axis=1)
         self.cost = tf.reduce_mean(recon_loss)
-        # self.exponential_lr_decay = tf.train.exponential_decay(self.learning_rate, self.global_step, 5000, 0.9)
-        self.exponential_lr_decay = self.learning_rate
+        self.exponential_lr_decay = tf.train.exponential_decay(self.learning_rate, self.global_step, 10000, 0.9)
+        # self.exponential_lr_decay = self.learning_rate
         self.optimizer = tf.train.AdamOptimizer(learning_rate=self.exponential_lr_decay).minimize(self.cost)
 
     def fit(self, X):
