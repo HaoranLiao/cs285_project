@@ -12,7 +12,7 @@ if os.environ.get('DISPLAY','') == '':
 import re
 import pandas as pd
 
-visualization_items = ["Best so far", "entloss", "entropy", "EpisodesSoFar", "EpLenMean", "EpRewMean", "EpThisIter", "EpTrueRewMean", "ev_tdlam_before", "meankl", "optimgain", "surrgain"]
+visualization_items = ["Best so far", "entloss", "entropy", "EpisodesSoFar", "EpLenMean", "EpMeanReturn(100 ep)", "EpRewMean", "EpThisIter", "EpTrueRewMean", "ev_tdlam_before", "meankl", "optimgain", "surrgain"]
 
 def get_values(log_file):
     return_dict = {item: [] for item in visualization_items}
