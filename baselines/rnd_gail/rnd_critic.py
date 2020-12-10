@@ -56,7 +56,7 @@ class RND_Critic_CNN(object):
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
         filters, strides, _ = U.cnn(self.rnd_cnn_type)
-        with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
+        with tf.variable_scope(scope):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
