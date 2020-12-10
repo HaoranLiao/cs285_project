@@ -298,7 +298,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     if not mmd:
         ### Here is the training of the critic
-        reward_giver.train(*expert_dataset, iter=rnd_iter)
+        reward_giver.train(*expert_dataset, lr=0.01, iter=10)
 
         reward_giver.save_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic_test')
 
