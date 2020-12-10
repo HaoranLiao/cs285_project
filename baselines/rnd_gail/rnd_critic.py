@@ -106,9 +106,8 @@ class RND_Critic_CNN(object):
         out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
         logger.info("%d,%f,%f"%(0,in_dist_loss,out_of_dist_loss))
         for i in tqdm(range(iter)):
-            for i in range(iter):
-                for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
-                    self._train(*data, lr)
+            for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
+                self._train(*data, lr)
             in_dist_loss = self.get_feature_loss(*inspection_set)
             out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
             logger.info("%d,%f,%f"%(i+1,in_dist_loss,out_of_dist_loss))
