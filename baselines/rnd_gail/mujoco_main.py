@@ -196,6 +196,11 @@ def main(args):
         save_dir = Checkpoint_dir
 
     args, rnd_iter, dyn_norm = modify_args(args)
+
+    logger.log(f"rnd_cnn_type: {args.rnd_cnn_type}")
+    logger.log(f"policy_cnn_type: {args.policy_cnn_type}")
+    logger.log(f"rnd_critic_scale: {args.rnd_critic_scale}")
+
     def policy_fn(name, ob_space, ac_space):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
