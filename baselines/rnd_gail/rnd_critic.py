@@ -99,10 +99,11 @@ class RND_Critic_CNN(object):
         saver.restore(U.get_session(), load_addr)
 
 class RND_Critic(object):
-    def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
-                 out_size=128, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd"):
+    def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=64, hid_layer=1,
+                 out_size=64, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd"):
         self.scope = scope
         self.scale = scale
+        logger.info("scale: %f" % scale)
         self.offset = offset
         self.out_size = out_size
         self.rnd_hid_size = rnd_hid_size
@@ -121,6 +122,7 @@ class RND_Critic(object):
         rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size)
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
+        feat_loss_no_reduce = tf.reduce_mean(tf.square(feat-rnd_feat), axis=-1)
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
 
         rnd_loss = tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale
@@ -128,6 +130,8 @@ class RND_Critic(object):
         # self.reward = reward_scale * (tf.math.softplus(rnd_loss) - rnd_loss)
         self.reward_func = U.function([ob, ac], self.reward)
         self.raw_reward = U.function([ob, ac], rnd_loss)
+        self.feat_loss_fn = U.function([ob, ac], feat_loss)
+        self.feat_loss_no_reduce_fn = U.function([ob, ac], feat_loss_no_reduce)
 
         self.trainer = tf.train.AdamOptimizer(learning_rate=lr)
 
@@ -157,16 +161,35 @@ class RND_Critic(object):
 
     def get_reward(self, ob, ac):
         return self.reward_func(ob, ac)
+
+    def get_feature_loss(self, ob, ac, reduce=True):
+        if reduce:
+            return self.feat_loss_fn(ob, ac)
+        else:
+            return self.feat_loss_no_reduce_fn(ob, ac)
     
     
     def get_raw_reward(self, ob, ac):
         return self.raw_reward(ob, ac)
 
-    def train(self, ob, ac, batch_size=32, lr=0.001, iter=200):
+    def train(self, ob, ac, batch_size=32, lr=0.0001, iter=200):
         logger.info("Training RND Critic")
-        for _ in tqdm(range(iter)):
+        # indices = np.arange(len(ob))
+        # np.random.shuffle(indices)
+        # inspection_set = [ob[indices[:1000]], ac[indices[:1000]]]
+        # out_of_dist_set = [ob[indices[:1000]], np.random.random(size=(inspection_set[1].shape))]
+        # logger.info("iter, in_dist_loss, out_of_dist_loss")
+        # in_dist_loss = self.get_feature_loss(*inspection_set)
+        # out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
+        # logger.info("%d,%f,%f"%(0,in_dist_loss,out_of_dist_loss))
+        for i in tqdm(range(iter)):
+        # for i in range(iter):
             for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
                 self._train(*data, lr)
+            # in_dist_loss = self.get_feature_loss(*inspection_set)
+            # out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
+            # logger.info("%d,%f,%f"%(i+1,in_dist_loss,out_of_dist_loss))
+
 
     def save_trained_variables(self, save_addr):
         saver = tf.train.Saver(self.get_trainable_variables())
