@@ -31,8 +31,8 @@ class RND_Critic_CNN(object):
         lr = tf.placeholder(tf.float32, None)
 
 
-        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size)
-        rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size)
+        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size, 0)
+        rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size, 1)
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
@@ -54,9 +54,9 @@ class RND_Critic_CNN(object):
         self.feat_loss_fn = U.function([ob, ac], feat_loss)
         self.feat_loss_no_reduce_fn = U.function([ob, ac], feat_loss_no_reduce)
 
-    def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
-        filters, strides, _ = U.cnn(self.rnd_cnn_type)
-        with tf.variable_scope(scope):
+    def build_graph(self, ob, ac, scope, hid_layer, hid_size, size, cnn_type):
+        filters, strides, _ = U.cnn(cnn_type)
+        with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
