@@ -316,7 +316,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.log(reward_giver.get_reward(*batch))
 
         temp = expert_dataset[1][:1000]
-        inspection_set[1] =
+        print(temp.shape)
 
         exit()
 

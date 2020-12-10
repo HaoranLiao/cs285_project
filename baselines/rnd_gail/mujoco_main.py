@@ -41,7 +41,7 @@ def get_exp_data(expert_path):
 def get_exp_data_atari(expert_path, ae=None):
     print("Start loading dataset...")
     obs, acs = [], []
-    for i in tqdm(range(5)):
+    for i in tqdm(range(1)):
         with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
             data = pickle.loads(f.read())
 
@@ -202,7 +202,7 @@ def main(args):
             
 
     def policy_fn_cnn(name, ob_space, ac_space):
-        return cnn_policy.CNNPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+        return cnn_policy.CNNPolicy(name=name, policy_cnn_type=args.policy_cnn_type, ob_space=ob_space, ac_space=ac_space,
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
@@ -231,7 +231,7 @@ def main(args):
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
             elif args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, CNN_critic=args.use_cnn)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, CNN_critic=args.use_cnn, rnd_cnn_type=args.rnd_cnn_type)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
