@@ -24,7 +24,8 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-DATASET_PATH = "/home/jerry/data2/cs285_final_proj/cs285_project/data/mspacman"
+DATASET_PATH = ""
+# DATASET_PATH = "/home/jerry/data2/cs285_final_proj/cs285_project/data/mspacman"
 # DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
 def get_exp_data(expert_path):

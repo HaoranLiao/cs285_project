@@ -315,11 +315,12 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
         for batch in iterbatches(inspection_set, batch_size=100):
             logger.log(reward_giver.get_reward(*batch))
 
-        # exit()
+        temp = expert_dataset[1][:1000]
+        inspection_set[1] =
 
-        reward_giver.save_trained_variables('../../params/rnd_critic')
+        exit()
 
-
+        # reward_giver.save_trained_variables('../../params/rnd_critic')
         # reward_giver.load_trained_variables('../../params/rnd_critic')
 
     best = -2000
