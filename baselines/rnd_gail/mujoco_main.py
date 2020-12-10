@@ -41,7 +41,7 @@ def get_exp_data(expert_path):
 def get_exp_data_atari(expert_path, ae=None):
     print("Start loading dataset...")
     obs, acs = [], []
-    for i in tqdm(range(1)):
+    for i in tqdm(range(5)):
         with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
             data = pickle.loads(f.read())
 
@@ -102,6 +102,7 @@ def argsparser():
     parser.add_argument('--reward', help='Reward Type', type=int, default=0)
     parser.add_argument('--rnd_cnn_type', help='RND Critic CNN Structure', type=int, default=1)
     parser.add_argument('--policy_cnn_type', help='Agent CNN Structure', type=int, default=1)
+    parser.add_argument('--rnd_critic_scale', help='RNN Critic Scale', type=int, default=250000)
     return parser.parse_args()
 
 
@@ -231,7 +232,7 @@ def main(args):
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
             elif args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, CNN_critic=args.use_cnn, rnd_cnn_type=args.rnd_cnn_type)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=args.rnd_critic_scale, CNN_critic=args.use_cnn, rnd_cnn_type=args.rnd_cnn_type)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
@@ -246,7 +247,7 @@ def main(args):
             if args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
             if args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=args.rnd_critic_scale, rnd_cnn_type=args.rnd_cnn_type)
 
         if args.use_cnn:
             policy = policy_fn_cnn

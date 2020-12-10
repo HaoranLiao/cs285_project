@@ -298,12 +298,12 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     if not mmd:
         ### Here is the training of the critic
-        # reward_giver.train(*expert_dataset, iter=rnd_iter)
+        reward_giver.train(*expert_dataset, iter=rnd_iter)
 
-        # reward_giver.save_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic')
+        reward_giver.save_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic_test')
 
-        reward_giver.load_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic')
-        logger.log('RND Critic Loaded')
+        # reward_giver.load_trained_variables('../../params/hid_layer_4_rnd_hid_layer_2_cnn1/rnd_critic')
+        # logger.log('RND Critic Loaded')
 
         # inspect the reward learned
         indices = np.arange(len(expert_dataset[0]))
@@ -316,7 +316,12 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.log(reward_giver.get_reward(*batch))
 
         temp = expert_dataset[1][:1000]
-        print(temp.shape)
+        for i in range(len(temp)):
+            temp[i] = [0., 0., 0., 0., 0., 0., 0., 0., 1.]
+        inspection_set = [expert_dataset[0][:1000], temp]
+        logger.log('Inspect reward_giver with a fixed action:')
+        for batch in iterbatches(inspection_set, batch_size=100):
+            logger.log(reward_giver.get_reward(*batch))
 
         exit()
 
