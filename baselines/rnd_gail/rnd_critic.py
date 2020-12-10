@@ -49,6 +49,11 @@ class RND_Critic_CNN(object):
 
         self._train = U.function([ob, ac, lr], [], updates=[self.trainer.apply_gradients(gvs)])
 
+        feat_loss = tf.reduce_mean(tf.square(feat - rnd_feat))
+        feat_loss_no_reduce = tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1)
+        self.feat_loss_fn = U.function([ob, ac], feat_loss)
+        self.feat_loss_no_reduce_fn = U.function([ob, ac], feat_loss_no_reduce)
+
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size):
         filters, strides, _ = U.cnn(self.rnd_cnn_type)
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
@@ -84,11 +89,29 @@ class RND_Critic_CNN(object):
     def get_raw_reward(self, ob, ac):
         return self.raw_reward(ob, ac)
 
-    def train(self, ob, ac, batch_size=32, lr=0.001, iter=200):
+    def get_feature_loss(self, ob, ac, reduce=True):
+        if reduce:
+            return self.feat_loss_fn(ob, ac)
+        else:
+            return self.feat_loss_no_reduce_fn(ob, ac)
+
+    def train(self, ob, ac, batch_size=32, lr=0.0001, iter=200):
         logger.info("Training RND Critic")
-        for _ in tqdm(range(iter)):
-            for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
-                self._train(*data, lr)
+        indices = np.arange(len(ob))
+        np.random.shuffle(indices)
+        inspection_set = [ob[indices[:1000]], ac[indices[:1000]]]
+        out_of_dist_set = [ob[indices[:1000]], np.random.random(size=(inspection_set[1].shape))]
+        logger.info("iter, in_dist_loss, out_of_dist_loss")
+        in_dist_loss = self.get_feature_loss(*inspection_set)
+        out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
+        logger.info("%d,%f,%f"%(0,in_dist_loss,out_of_dist_loss))
+        for i in tqdm(range(iter)):
+            for i in range(iter):
+                for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
+                    self._train(*data, lr)
+            in_dist_loss = self.get_feature_loss(*inspection_set)
+            out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
+            logger.info("%d,%f,%f"%(i+1,in_dist_loss,out_of_dist_loss))
 
     def save_trained_variables(self, save_addr):
         saver = tf.train.Saver(self.get_trainable_variables())
