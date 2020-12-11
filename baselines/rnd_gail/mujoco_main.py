@@ -24,7 +24,8 @@ from baselines.rnd_gail.merged_critic import make_critic
 
 import pickle
 
-DATASET_PATH = "/home/jerry/data2/cs285_final_proj/cs285_project/data/mspacman"
+DATASET_PATH = "/state/partition1/home/haoranliao/expert_data"
+# DATASET_PATH = "/home/jerry/data2/cs285_final_proj/cs285_project/data/mspacman"
 # DATASET_PATH = "/mnt/c/Users/haora/Desktop/expert_data"
 
 def get_exp_data(expert_path):
@@ -101,6 +102,7 @@ def argsparser():
     parser.add_argument('--reward', help='Reward Type', type=int, default=0)
     parser.add_argument('--rnd_cnn_type', help='RND Critic CNN Structure', type=int, default=1)
     parser.add_argument('--policy_cnn_type', help='Agent CNN Structure', type=int, default=1)
+    parser.add_argument('--rnd_critic_scale', help='RNN Critic Scale', type=int, default=250000)
     return parser.parse_args()
 
 
@@ -194,6 +196,11 @@ def main(args):
         save_dir = Checkpoint_dir
 
     args, rnd_iter, dyn_norm = modify_args(args)
+
+    logger.log(f"rnd_cnn_type: {args.rnd_cnn_type}")
+    logger.log(f"policy_cnn_type: {args.policy_cnn_type}")
+    logger.log(f"rnd_critic_scale: {args.rnd_critic_scale}")
+
     def policy_fn(name, ob_space, ac_space):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
@@ -201,7 +208,7 @@ def main(args):
             
 
     def policy_fn_cnn(name, ob_space, ac_space):
-        return cnn_policy.CNNPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+        return cnn_policy.CNNPolicy(name=name, policy_cnn_type=args.policy_cnn_type, ob_space=ob_space, ac_space=ac_space,
                                     hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
 
     if args.task == 'train':
@@ -230,7 +237,7 @@ def main(args):
             elif args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, reward_type=args.reward)
             elif args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, CNN_critic=args.use_cnn)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=args.rnd_critic_scale, CNN_critic=args.use_cnn, rnd_cnn_type=args.rnd_cnn_type)
             else:
                 critic = make_critic(env, exp_data, reward_type=args.reward)
         else:
@@ -245,7 +252,7 @@ def main(args):
             if args.env_id == "Ant-v2":
                 critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100)
             if args.env_id == "MsPacman-v0":
-                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=100, rnd_cnn_type=args.rnd_cnn_type)
+                critic = make_critic(env, exp_data, hid_size=128, reward_type=args.reward, scale=args.rnd_critic_scale, rnd_cnn_type=args.rnd_cnn_type)
 
         if args.use_cnn:
             policy = policy_fn_cnn
