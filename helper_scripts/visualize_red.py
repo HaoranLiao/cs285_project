@@ -52,7 +52,7 @@ def plot_multiple_run(dataframes, plotting_category):
 
 dfs = {}
 for item in sys.argv[1:]:
-    dfs[os.path.basename(item).split(".")[0]] = get_values(item)
+    dfs[os.path.basename(item)] = get_values(item)
 
 print("Index   |  Column name")
 print("0       |  All")
