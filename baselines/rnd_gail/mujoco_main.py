@@ -138,6 +138,9 @@ def modify_args(args):
             args.pretrained = True
             args.BC_max_iter = 10
             args.fixed_var = False
+
+        if args.env_id == "MsPacman-v0":
+            rnd_iter = 5
         return args, rnd_iter, dyn_norm
     else:
         if args.env_id == "Hopper-v2":
@@ -179,6 +182,7 @@ def main(args):
         from baselines.common.vae_encoding_wrapper import VAEEncodingWrapper
         ae = Autoencoder((84,84,4), [(64, 8, 2), (128, 6, 3), (128, 4, 2), (128, 3, 1)], [1000,500], 100)
         ae.load_model("../../vae/runs/5e-4decay/model")
+        U.update_initialized_parameters()
         env = VAEEncodingWrapper(env, ae)
     env.seed(args.seed)
 
@@ -202,8 +206,10 @@ def main(args):
     logger.log(f"rnd_critic_scale: {args.rnd_critic_scale}")
 
     def policy_fn(name, ob_space, ac_space):
+        # return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
+        #                             hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
-                                    hid_size=args.policy_hidden_size, num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var)
+                                    hid_size=[150, 50], num_hid_layers=2, popart=args.popart, gaussian_fixed_var=args.fixed_var, activation="relu")
 
             
 
@@ -315,7 +321,7 @@ def train(env, seed, policy_fn, reward_giver, dataset,
                    entcoeff=policy_entcoeff,
                    max_timesteps=num_timesteps,
                    ckpt_dir=checkpoint_dir,
-                   timesteps_per_batch=1024,
+                   timesteps_per_batch=2048,
                    max_kl=args.max_kl, cg_iters=10, cg_damping=0.1,
                    gamma=gamma, lam=0.97,
                    vf_iters=5, vf_stepsize=1e-3,

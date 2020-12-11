@@ -75,6 +75,7 @@ class Autoencoder:
         return conved_shapes
     
     def initialize_enc_weights(self):
+        # with tf.variable_scope("autoencoder/encoder_weights"):
     # Encoder Weights
         weights = {}
         biases = {}
@@ -90,9 +91,9 @@ class Autoencoder:
             low = -np.sqrt(6.0/(input_channels + output_channels))
             high = np.sqrt(6.0/(input_channels + output_channels))
             weights[i] = tf.Variable(tf.random_uniform((filter_size, filter_size, input_channels, output_channels),
-                                                       minval=low,
-                                                       maxval=high,
-                                                       dtype=tf.float32)
+                                                    minval=low,
+                                                    maxval=high,
+                                                    dtype=tf.float32)
                                     )
             biases[i] = tf.Variable(tf.zeros([output_channels]), dtype=tf.float32)
         
@@ -103,10 +104,10 @@ class Autoencoder:
             low = -np.sqrt(6.0/(fan_in + fan_out))
             high = np.sqrt(6.0/(fan_in + fan_out))
             weights[f'fc_{i}'] = tf.Variable(tf.random_uniform((fan_in, fan_out),
-                                                      minval=low,
-                                                      maxval=high,
-                                                      dtype=tf.float32)
-                                   )
+                                                    minval=low,
+                                                    maxval=high,
+                                                    dtype=tf.float32)
+                                )
             biases[f'fc_{i}'] = tf.Variable(tf.zeros([fan_out]), dtype=tf.float32)
     # latent layer weights
         if len(self.dense_layer_specs) > 0:
@@ -117,16 +118,17 @@ class Autoencoder:
         low = -np.sqrt(6.0/(fan_in + fan_out))
         high = np.sqrt(6.0/(fan_in + fan_out))
         weights['z'] = tf.Variable(tf.random_uniform((fan_in, fan_out),
-                                                      minval=low,
-                                                      maxval=high,
-                                                      dtype=tf.float32)
-                                   )
+                                                    minval=low,
+                                                    maxval=high,
+                                                    dtype=tf.float32)
+                                )
         biases['z'] = tf.Variable(tf.zeros([fan_out]), dtype=tf.float32)
         return weights, biases
         
     
     
     def initialize_dec_weights(self, use_shared_weights):
+        # with tf.variable_scope("autoencoder/decoder_weights"):
     # Decoder Weights
         weights = {}
         biases = {}
@@ -139,10 +141,10 @@ class Autoencoder:
         low = -np.sqrt(6.0/(fan_in + fan_out))
         high = np.sqrt(6.0/(fan_in + fan_out))
         weights['z'] = tf.Variable(tf.random_uniform((fan_in, fan_out),
-                                                     minval=low,
-                                                     maxval=high,
-                                                     dtype=tf.float32)
-                                  )
+                                                    minval=low,
+                                                    maxval=high,
+                                                    dtype=tf.float32)
+                                )
         biases['z'] = tf.Variable(tf.zeros([fan_out]), dtype=tf.float32)
     # Dense layers
         for i in range(len(self.dense_layer_specs) - 1, -1, -1):
@@ -151,10 +153,10 @@ class Autoencoder:
             low = -np.sqrt(6.0/(fan_in + fan_out))
             high = np.sqrt(6.0/(fan_in + fan_out))
             weights[f'fc_{i}'] = tf.Variable(tf.random_uniform((fan_in, fan_out),
-                                                     minval=low,
-                                                     maxval=high,
-                                                     dtype=tf.float32)
-                                  )
+                                                    minval=low,
+                                                    maxval=high,
+                                                    dtype=tf.float32)
+                                )
             biases[f'fc_{i}'] = tf.Variable(tf.zeros([fan_out]), dtype=tf.float32)
     
     # Conv layer weights and biases
