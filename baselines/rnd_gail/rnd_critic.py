@@ -31,8 +31,11 @@ class RND_Critic_CNN(object):
         lr = tf.placeholder(tf.float32, None)
 
 
-        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size, 0)
+        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size, 1)
         rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size, 1)
+
+        print(tf.trainable_variables(self.scope))
+        print(tf.trainable_variables(self.scope+"_rnd"))
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
@@ -111,6 +114,8 @@ class RND_Critic_CNN(object):
             in_dist_loss = self.get_feature_loss(*inspection_set)
             out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
             logger.info("%d,%f,%f"%(i+1,in_dist_loss,out_of_dist_loss))
+            # with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
+            #     print(tf.get_local_variable('rnd/Variable:0'))
 
     def save_trained_variables(self, save_addr):
         saver = tf.train.Saver(self.get_trainable_variables())
