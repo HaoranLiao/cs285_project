@@ -39,7 +39,21 @@ def plot(dataframe, plotting_categories):
     plt.ylabel("Value")
     plt.show()
 
-df = get_values(sys.argv[1])
+def plot_multiple_run(dataframes, plotting_category):
+    plt.figure()
+    for df_name in dataframes:
+        plt.plot(dataframes[df_name].index, dataframes[df_name][plotting_category], label=df_name)
+    plt.legend()
+    plt.xlabel("Timesteps")
+    plt.ylabel("Value")
+    plt.title(plotting_category)
+    plt.show()
+
+
+dfs = {}
+for item in sys.argv[1:]:
+    dfs[os.path.basename(item)] = get_values(item)
+
 print("Index   |  Column name")
 print("0       |  All")
 for idx, col_name in enumerate(visualization_items):
@@ -47,7 +61,10 @@ for idx, col_name in enumerate(visualization_items):
 while True:
     inp = input("What to visualize?")
     if inp == "0":
+        assert len(dfs) == 1
         plotting_categories = visualization_items
+        plot(dfs.values()[0], plotting_categories)
     else:
-        plotting_categories = [visualization_items[int(i) - 1] for i in inp.split(" ")]
-    plot(df, plotting_categories)
+        plotting_category = visualization_items[int(inp) - 1] 
+        plot_multiple_run(dfs, plotting_category)
+    

@@ -211,6 +211,9 @@ def in_session(f):
 
 ALREADY_INITIALIZED = set()
 
+def update_initialized_parameters():
+    ALREADY_INITIALIZED.update(set(tf.global_variables()))
+
 def initialize():
     """Initialize all the uninitialized variables in the global scope."""
     new_variables = set(tf.global_variables()) - ALREADY_INITIALIZED

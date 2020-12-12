@@ -21,8 +21,15 @@ class MlpPolicy(object):
         with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
             self._init(*args, **kwargs)
 
-    def _init(self, ob_space, ac_space, hid_size, num_hid_layers, gaussian_fixed_var=False, popart=True):
+    def _init(self, ob_space, ac_space, hid_size, num_hid_layers, gaussian_fixed_var=False, popart=True, activation="tanh"):
         assert isinstance(ob_space, gym.spaces.Box)
+
+        if activation == "tanh":
+            ac_fn = tf.nn.tanh
+        elif activation == "relu":
+            ac_fn = tf.nn.relu
+        if num_hid_layers > 1 and type(hid_size) is int:
+            hid_size = [hid_size] * num_hid_layers
 
         self.pdtype = pdtype = make_pdtype(ac_space)
 
@@ -37,7 +44,7 @@ class MlpPolicy(object):
         obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
         last_out = obz
         for i in range(num_hid_layers):
-            last_out = tf.nn.tanh(dense(last_out, hid_size, "vffc%i" % (i+1), weight_init=U.normc_initializer(1.0)))
+            last_out = ac_fn(dense(last_out, hid_size[i], "vffc%i" % (i+1), weight_init=U.normc_initializer(1.0)))
         self.norm_vpred = dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:, 0]
         if popart:
             self.vpred = denormalize(self.norm_vpred, self.v_rms)
@@ -46,7 +53,7 @@ class MlpPolicy(object):
 
         last_out = obz
         for i in range(num_hid_layers):
-            last_out = tf.nn.tanh(dense(last_out, hid_size, "polfc%i" % (i+1), weight_init=U.normc_initializer(1.0)))
+            last_out = ac_fn(dense(last_out, hid_size[i], "polfc%i" % (i+1), weight_init=U.normc_initializer(1.0)))
 
         if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
             mean = dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
