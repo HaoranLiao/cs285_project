@@ -299,7 +299,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
     if not mmd:
         ### Here is the training of the critic
         lr = 0.001
-        reward_giver.train(*expert_dataset, lr=lr, iter=10)
+        reward_giver.train(*expert_dataset, lr=lr, iter=30)
         logger.log(f"learning rate: {lr}")
 
         reward_giver.save_trained_variables('../../params/rnd_critic')
