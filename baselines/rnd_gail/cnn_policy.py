@@ -87,8 +87,6 @@ class CNNPolicy(object):
 
     def policy_cnn(self, input_layer):
         filters, strides, cnn_type = U.cnn(self.policy_cnn_type)
-        import pdb
-        pdb.set_trace()
         logger.log(f"policy cnn type: {cnn_type}")
 
         cnn_layer = tf.nn.conv2d(input_layer, filters[0], strides=strides[0], padding="VALID")
