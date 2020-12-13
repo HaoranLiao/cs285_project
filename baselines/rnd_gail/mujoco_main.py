@@ -41,7 +41,7 @@ def get_exp_data(expert_path):
 def get_exp_data_atari(expert_path, ae=None):
     print("Start loading dataset...")
     obs, acs = [], []
-    for i in tqdm(range(5)):
+    for i in tqdm(range(1)):
         with open(expert_path + f'/expert_data_{i}.pkl', 'rb') as f:
             data = pickle.loads(f.read())
 
