@@ -60,18 +60,18 @@ class RND_Critic_CNN(object):
 
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, out_size):
         filters, strides, cnn_type = U.cnn(self.rnd_cnn_type)
-        print(f'critic cnn type: {cnn_type}')
+        logger.log(f'critic cnn type: {cnn_type}')
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
             ob = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis #1100+
-            print(f"critic cnn ob output shape: {ob.shape}")
+            logger.log(f"critic cnn ob output shape: {ob.shape}")
 
             layer = ob
             list_of_output_shape = [500, 100]  # 1000 -> 500 -> 100
-            print(f"critic cnn dense: {list_of_output_shape}")
+            logger.log(f"critic cnn dense: {list_of_output_shape}")
             weights, biases = U.dense(layer, list_of_output_shape)
             for i in range(len(list_of_output_shape) - 1):
                 layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
@@ -83,6 +83,7 @@ class RND_Critic_CNN(object):
             for _ in range(hid_layer):
                 layer = tf.layers.dense(layer, hid_size, activation=tf.nn.leaky_relu)
             layer = tf.layers.dense(layer, out_size, activation=None)
+            logger.log(f"[ob, ac] dense hid_layer: {hid_layer}, hid_size: {hid_size}, out_size: {out_size}")
         return layer
 
     def build_reward_op(self, ob, ac):

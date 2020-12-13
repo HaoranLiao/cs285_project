@@ -15,7 +15,7 @@ from ..common.mpi_running_mean_std import RunningMeanStd
 from ..common.distributions import make_pdtype
 from ..acktr.utils import dense
 from ..common.dataset_plus import normalize, denormalize
-
+from .. import logger
 
 class CNNPolicy(object):
     recurrent = False
@@ -87,16 +87,17 @@ class CNNPolicy(object):
 
     def policy_cnn(self, input_layer):
         filters, strides, cnn_type = U.cnn(self.policy_cnn_type)
-        print(f"policy cnn type: {cnn_type}")
+        logger.log(f"policy cnn type: {cnn_type}")
 
         cnn_layer = tf.nn.conv2d(input_layer, filters[0], strides=strides[0], padding="VALID")
         assert len(filters) > 1 and len(strides) == len(filters)
         for i in np.arange(1, len(filters)):
             cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
         layer = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])  # flatten cnn output, except the batch axis #1100+
+        logger.log(f"policy_cnn out size: {layer.shape}")
 
         list_of_output_shape = [500, 100]  # 1000 -> 500 -> 100
-        print(f"policy cnn dense: {list_of_output_shape}")
+        logger.log(f"policy cnn dense: {list_of_output_shape}")
         weights, biases = U.dense(layer, list_of_output_shape)
         for i in range(len(list_of_output_shape) - 1):
             layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
