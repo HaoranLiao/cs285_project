@@ -94,10 +94,10 @@ class CNNPolicy(object):
         for i in np.arange(1, len(filters)):
             cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
         layer = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])  # flatten cnn output, except the batch axis #1100+
-        logger.log(f"policy_cnn out size: {layer.shape}")
+        # logger.log(f"policy_cnn out size: {layer.shape}")
 
         list_of_output_shape = [500, 100]  # 1000 -> 500 -> 100
-        logger.log(f"policy cnn dense: {list_of_output_shape}")
+        # logger.log(f"policy cnn dense: {list_of_output_shape}")
         weights, biases = U.dense(layer, list_of_output_shape)
         for i in range(len(list_of_output_shape) - 1):
             layer = tf.add(tf.matmul(layer, weights[i]), biases[i])

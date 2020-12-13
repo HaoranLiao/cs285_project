@@ -327,8 +327,6 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.log("="*30)
         # exit()
 
-        # reward_giver.load_trained_variables('../../params/rnd_critic')
-
     best = -2000
     save_ind = 0
     max_save = 3
