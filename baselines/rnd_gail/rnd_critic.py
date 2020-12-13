@@ -10,8 +10,8 @@ import numpy as np
 from tqdm import tqdm
 
 class RND_Critic_CNN(object):
-    def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=128, hid_layer=1,
-                 out_size=128, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd", rnd_cnn_type=1):
+    def __init__(self, ob_size, ac_size, rnd_hid_size=128, rnd_hid_layer=4, hid_size=64, hid_layer=1,
+                 out_size=64, scale=250000.0, offset=0., reward_scale=1.0, scope="rnd", rnd_cnn_type=1):
         self.ob_size = ob_size
         self.ac_size = ac_size
         self.scope = scope
@@ -30,8 +30,8 @@ class RND_Critic_CNN(object):
         ac = tf.placeholder(tf.float32, (None, ac_size))
         lr = tf.placeholder(tf.float32, None)
 
-        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size, 1)
-        rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size, 1)
+        feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size)
+        rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size)
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
@@ -44,7 +44,6 @@ class RND_Critic_CNN(object):
 
         self.trainer = tf.train.AdamOptimizer(learning_rate=lr)
 
-        # rnd_feat_variable = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.scope+"_rnd")
         gvs = self.trainer.compute_gradients(feat_loss, self.get_trainable_variables())
 
         self._train = U.function([ob, ac, lr], [], updates=[self.trainer.apply_gradients(gvs)])
@@ -59,31 +58,31 @@ class RND_Critic_CNN(object):
         rnd_feat = tf.reduce_mean(rnd_feat)
         self.rnd_feat_fn = U.function([ob, ac], rnd_feat)
 
-    def build_graph(self, ob, ac, scope, hid_layer, hid_size, size, cnn_type):
-        filters, strides, _ = U.cnn(cnn_type)
+    def build_graph(self, ob, ac, scope, hid_layer, hid_size, out_size):
+        filters, strides, cnn_type = U.cnn(self.rnd_cnn_type)
+        print(f'critic cnn type: {cnn_type}')
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
             cnn_layer = tf.nn.conv2d(ob, filters[0], strides=strides[0], padding="VALID")
             assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
             ob = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis #1100+
-            print(ob.shape)
+            print(f"critic cnn ob output shape: {ob.shape}")
 
             layer = ob
-            weights, biases, _ = U.dense(layer, 2)
-            for i in range(2 - 1):
+            list_of_output_shape = [500, 100]  # 1000 -> 500 -> 100
+            print(f"critic cnn dense: {list_of_output_shape}")
+            weights, biases = U.dense(layer, list_of_output_shape)
+            for i in range(len(list_of_output_shape) - 1):
                 layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
                 layer = tf.nn.relu(layer)
             layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
             ob = layer
 
-
             layer = tf.concat([ob, ac], axis=1)
-            weights, biases, _ = U.dense(layer, hid_layer)
-            for i in range(hid_layer - 1):
-                layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
-                layer = tf.nn.relu(layer)
-            layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
+            for _ in range(hid_layer):
+                layer = tf.layers.dense(layer, hid_size, activation=tf.nn.leaky_relu)
+            layer = tf.layers.dense(layer, out_size, activation=None)
         return layer
 
     def build_reward_op(self, ob, ac):

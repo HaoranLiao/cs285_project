@@ -103,22 +103,10 @@ def cnn(cnn_type):
 
     return filters, strides, cnn_type
 
-def dense(layer, hid_layer):
-    if hid_layer == 1:
-        dense_in = [int(layer.shape[1])] # 1600+
-        # dense_out = [64]
-        dense_out = [128]
-        logger.log("hid_layer 1")
-    elif hid_layer == 2:
-        dense_in = [int(layer.shape[1]), 512]
-        dense_out = [512, 128]
-        logger.log("hid_layer 2")
-    elif hid_layer == 4:
-        dense_in = [int(layer.shape[1]), 512, 256, 128]
-        dense_out = [512, 256, 128, 64]
-        logger.log("hid_layer 4")
-    else:
-        raise Exception("number of dense layer not constructed")
+
+def dense(input_layer, list_of_output_shape):
+    dense_in = [int(input_layer.shape[1]), *list_of_output_shape[:-1]]
+    dense_out = list_of_output_shape
 
     low, high = [], []
     for i in range(len(dense_in)):
@@ -131,7 +119,7 @@ def dense(layer, hid_layer):
         weights.append(tf.Variable(tf.random_uniform((dense_in[i], dense_out[i]), minval=low[i], maxval=high[i], dtype=tf.float32)))
         biases.append(tf.Variable(tf.zeros([dense_out[i]]), dtype=tf.float32))
 
-    return weights, biases, hid_layer
+    return weights, biases
 
 def switch(condition, then_expression, else_expression):
     """Switches between two operations depending on a scalar value (int or bool).

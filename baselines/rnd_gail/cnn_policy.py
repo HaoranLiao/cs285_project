@@ -41,10 +41,11 @@ class CNNPolicy(object):
 
         obz = tf.clip_by_value((ob - self.ob_rms.mean) / self.ob_rms.std, -5.0, 5.0)
         last_out = obz
-        # Change first layer of dense to cnn_dense
-        last_out = tf.nn.tanh(self.cnn_dense(last_out, hid_size, "vffc1", weight_init=U.normc_initializer(1.0)))
-        for i in np.arange(1, num_hid_layers):
-            last_out = tf.nn.tanh(dense(last_out, hid_size, "vffc%i"%(i+1), weight_init=U.normc_initializer(1.0)))
+        # Add cnn_dense before orignal dense
+        last_out = self.policy_cnn(last_out) # should output size 100
+
+        for i in range(num_hid_layers):
+            last_out = tf.nn.tanh(dense(last_out, hid_size, "vffc%i" % (i + 1), weight_init=U.normc_initializer(1.0)))
         self.norm_vpred = dense(last_out, 1, "vffinal", weight_init=U.normc_initializer(1.0))[:, 0]
         if popart:
             self.vpred = denormalize(self.norm_vpred, self.v_rms)
@@ -52,10 +53,11 @@ class CNNPolicy(object):
             self.vpred = self.norm_vpred
 
         last_out = obz
-        # Change first layer of dense to cnn_dense
-        last_out = tf.nn.tanh(self.cnn_dense(last_out, hid_size, "polfc1",  weight_init=U.normc_initializer(1.0)))
-        for i in np.arange(1, num_hid_layers):
-            last_out = tf.nn.tanh(dense(last_out, hid_size, "polfc%i"%(i+1),  weight_init=U.normc_initializer(1.0)))
+        # Add cnn_dense before orignal dense
+        last_out = self.policy_cnn(last_out) # should output size 100
+
+        for i in range(num_hid_layers):
+            last_out = tf.nn.tanh(dense(last_out, hid_size, "vffc%i" % (i + 1), weight_init=U.normc_initializer(1.0)))
 
         if gaussian_fixed_var and isinstance(ac_space, gym.spaces.Box):
             mean = dense(last_out, pdtype.param_shape()[0]//2, "polfinal", U.normc_initializer(0.01))
@@ -83,41 +85,51 @@ class CNNPolicy(object):
         vferr = tf.reduce_mean(tf.square(self.vpred - ret))
         self.vlossandgrad = U.function([ob, ret], U.flatgrad(vferr, self.get_vf_variable()))
 
-    def cnn_dense(self, x, size, name, weight_init=None, bias_init=0, weight_loss_dict=None, reuse=None):
-        with tf.variable_scope(name, reuse=reuse):
-            assert (len(tf.get_variable_scope().name.split('/')) == 2)
+    def policy_cnn(self, input_layer):
+        filters, strides, cnn_type = U.cnn(self.policy_cnn_type)
+        print(f"policy cnn type: {cnn_type}")
 
-            # CNN
-            filters, strides, _ = U.cnn(self.policy_cnn_type)
-            
-            cnn_layer = tf.nn.conv2d(x, filters[0], strides=strides[0], padding="VALID")
-            assert len(filters) > 1 and len(strides) == len(filters)
-            for i in np.arange(1, len(filters)):
-                cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
-            x = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis
+        cnn_layer = tf.nn.conv2d(input_layer, filters[0], strides=strides[0], padding="VALID")
+        assert len(filters) > 1 and len(strides) == len(filters)
+        for i in np.arange(1, len(filters)):
+            cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
+        layer = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])  # flatten cnn output, except the batch axis #1100+
 
-            layer = x
-            weights, biases, _ = U.dense(layer, 2)
-            for i in range(2 - 1):
-                layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
-                layer = tf.nn.relu(layer)
-            layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
-            x = layer
-            # CNN ends
+        list_of_output_shape = [500, 100]  # 1000 -> 500 -> 100
+        print(f"policy cnn dense: {list_of_output_shape}")
+        weights, biases = U.dense(layer, list_of_output_shape)
+        for i in range(len(list_of_output_shape) - 1):
+            layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
+            layer = tf.nn.relu(layer)
+        out_layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
 
-            w = tf.get_variable("w", [x.get_shape()[1], size], initializer=weight_init)
-            b = tf.get_variable("b", [size], initializer=tf.constant_initializer(bias_init))
-            weight_decay_fc = 3e-4
+        return out_layer
 
-            if weight_loss_dict is not None:
-                weight_decay = tf.multiply(tf.nn.l2_loss(w), weight_decay_fc, name='weight_decay_loss')
-                if weight_loss_dict is not None:
-                    weight_loss_dict[w] = weight_decay_fc
-                    weight_loss_dict[b] = 0.0
-
-                tf.add_to_collection(tf.get_variable_scope().name.split('/')[0] + '_' + 'losses', weight_decay)
-
-            return tf.nn.bias_add(tf.matmul(x, w), b)
+    # def cnn_dense(self, x, size, name, weight_init=None, bias_init=0, weight_loss_dict=None, reuse=None):
+    #     with tf.variable_scope(name, reuse=reuse):
+    #         assert (len(tf.get_variable_scope().name.split('/')) == 2)
+    #
+    #         # CNN
+    #         filters, strides, _ = U.cnn(self.policy_cnn_type)
+    #
+    #         cnn_layer = tf.nn.conv2d(x, filters[0], strides=strides[0], padding="VALID")
+    #         assert len(filters) > 1 and len(strides) == len(filters)
+    #         for i in np.arange(1, len(filters)):
+    #             cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
+    #         x = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis
+    #
+    #         layer = x
+    #         list_of_output_shape = [512, 256, size]
+    #         print(f"critic cnn dense: {list_of_output_shape}")
+    #         weights, biases = U.dense(layer, list_of_output_shape)
+    #         for i in range(len(list_of_output_shape) - 1):
+    #             layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
+    #             layer = tf.nn.relu(layer)
+    #         layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
+    #         x = layer
+    #         # CNN ends
+    #
+    #         return x
 
     def init_popart(self):
         old_std = tf.placeholder(tf.float32, shape=[1], name='old_std')
