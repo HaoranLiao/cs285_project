@@ -30,12 +30,8 @@ class RND_Critic_CNN(object):
         ac = tf.placeholder(tf.float32, (None, ac_size))
         lr = tf.placeholder(tf.float32, None)
 
-
         feat = self.build_graph(ob, ac, self.scope, hid_layer, hid_size, out_size, 1)
         rnd_feat = self.build_graph(ob, ac, self.scope+"_rnd", rnd_hid_layer, rnd_hid_size, out_size, 1)
-
-        print(tf.trainable_variables(self.scope))
-        print(tf.trainable_variables(self.scope+"_rnd"))
 
         feat_loss = tf.reduce_mean(tf.square(feat-rnd_feat))
         self.reward = reward_scale*tf.exp(offset- tf.reduce_mean(tf.square(feat - rnd_feat), axis=-1) * self.scale)
@@ -48,6 +44,7 @@ class RND_Critic_CNN(object):
 
         self.trainer = tf.train.AdamOptimizer(learning_rate=lr)
 
+        # rnd_feat_variable = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=self.scope+"_rnd")
         gvs = self.trainer.compute_gradients(feat_loss, self.get_trainable_variables())
 
         self._train = U.function([ob, ac, lr], [], updates=[self.trainer.apply_gradients(gvs)])
@@ -57,6 +54,11 @@ class RND_Critic_CNN(object):
         self.feat_loss_fn = U.function([ob, ac], feat_loss)
         self.feat_loss_no_reduce_fn = U.function([ob, ac], feat_loss_no_reduce)
 
+        feat = tf.reduce_mean(feat)
+        self.feat_fn = U.function([ob, ac], feat)
+        rnd_feat = tf.reduce_mean(rnd_feat)
+        self.rnd_feat_fn = U.function([ob, ac], rnd_feat)
+
     def build_graph(self, ob, ac, scope, hid_layer, hid_size, size, cnn_type):
         filters, strides, _ = U.cnn(cnn_type)
         with tf.variable_scope(scope, reuse=tf.AUTO_REUSE):
@@ -64,7 +66,17 @@ class RND_Critic_CNN(object):
             assert len(filters) > 1 and len(strides) == len(filters)
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
-            ob = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis
+            ob = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis #1100+
+            print(ob.shape)
+
+            layer = ob
+            weights, biases, _ = U.dense(layer, 2)
+            for i in range(2 - 1):
+                layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
+                layer = tf.nn.relu(layer)
+            layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
+            ob = layer
+
 
             layer = tf.concat([ob, ac], axis=1)
             weights, biases, _ = U.dense(layer, hid_layer)
@@ -88,7 +100,6 @@ class RND_Critic_CNN(object):
     def get_reward(self, ob, ac):
         return self.reward_func(ob, ac)
     
-    
     def get_raw_reward(self, ob, ac):
         return self.raw_reward(ob, ac)
 
@@ -98,24 +109,36 @@ class RND_Critic_CNN(object):
         else:
             return self.feat_loss_no_reduce_fn(ob, ac)
 
+    def get_feat(self, ob, ac):
+        return self.feat_fn(ob, ac)
+
+    def get_rnd_feat(self, ob, ac):
+        return self.rnd_feat_fn(ob, ac)
+
     def train(self, ob, ac, batch_size=32, lr=0.0001, iter=200):
         logger.info("Training RND Critic")
         indices = np.arange(len(ob))
         np.random.shuffle(indices)
         inspection_set = [ob[indices[:1000]], ac[indices[:1000]]]
         out_of_dist_set = [ob[indices[:1000]], np.random.random(size=(inspection_set[1].shape))]
-        logger.info("iter, in_dist_loss, out_of_dist_loss")
+        logger.info("iter, in_dist_loss, out_of_dist_loss,\t in_feat, in_rnd_feat,\t out_feat, out_rnd_feat")
         in_dist_loss = self.get_feature_loss(*inspection_set)
         out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
-        logger.info("%d,%f,%f"%(0,in_dist_loss,out_of_dist_loss))
+        in_feat = self.get_feat(*inspection_set)
+        in_rnd_feat = self.get_rnd_feat(*inspection_set)
+        out_feat = self.get_feat(*out_of_dist_set)
+        out_rnd_feat = self.get_rnd_feat(*out_of_dist_set)
+        logger.info("%d,%f,%f,\t%f,%f,\t%f, %f"%(0,in_dist_loss,out_of_dist_loss, in_feat, in_rnd_feat, out_feat, out_rnd_feat))
         for i in tqdm(range(iter)):
             for data in iterbatches([ob, ac], batch_size=batch_size, include_final_partial_batch=True):
                 self._train(*data, lr)
             in_dist_loss = self.get_feature_loss(*inspection_set)
             out_of_dist_loss = self.get_feature_loss(*out_of_dist_set)
-            logger.info("%d,%f,%f"%(i+1,in_dist_loss,out_of_dist_loss))
-            # with tf.variable_scope(self.scope, reuse=tf.AUTO_REUSE):
-            #     print(tf.get_local_variable('rnd/Variable:0'))
+            in_feat = self.get_feat(*inspection_set)
+            in_rnd_feat = self.get_rnd_feat(*inspection_set)
+            out_feat = self.get_feat(*out_of_dist_set)
+            out_rnd_feat = self.get_rnd_feat(*out_of_dist_set)
+            logger.info("%d,%f,%f,\t%f,%f,\t%f, %f"%(i+1 ,in_dist_loss,out_of_dist_loss, in_feat, in_rnd_feat, out_feat, out_rnd_feat))
 
     def save_trained_variables(self, save_addr):
         saver = tf.train.Saver(self.get_trainable_variables())

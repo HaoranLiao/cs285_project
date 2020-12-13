@@ -95,6 +95,14 @@ class CNNPolicy(object):
             for i in np.arange(1, len(filters)):
                 cnn_layer = tf.nn.conv2d(cnn_layer, filters[i], strides[i], "VALID")
             x = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])   # flatten cnn output, except the batch axis
+
+            layer = x
+            weights, biases, _ = U.dense(layer, 2)
+            for i in range(2 - 1):
+                layer = tf.add(tf.matmul(layer, weights[i]), biases[i])
+                layer = tf.nn.relu(layer)
+            layer = tf.add(tf.matmul(layer, weights[-1]), biases[-1])
+            x = layer
             # CNN ends
 
             w = tf.get_variable("w", [x.get_shape()[1], size], initializer=weight_init)

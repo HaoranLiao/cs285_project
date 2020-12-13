@@ -105,12 +105,13 @@ def cnn(cnn_type):
 
 def dense(layer, hid_layer):
     if hid_layer == 1:
-        dense_in = [int(layer.shape[1])]
-        dense_out = [64]
+        dense_in = [int(layer.shape[1])] # 1600+
+        # dense_out = [64]
+        dense_out = [128]
         logger.log("hid_layer 1")
     elif hid_layer == 2:
-        dense_in = [int(layer.shape[1]), 128]
-        dense_out = [128, 64]
+        dense_in = [int(layer.shape[1]), 512]
+        dense_out = [512, 128]
         logger.log("hid_layer 2")
     elif hid_layer == 4:
         dense_in = [int(layer.shape[1]), 512, 256, 128]

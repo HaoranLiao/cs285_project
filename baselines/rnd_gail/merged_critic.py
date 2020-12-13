@@ -15,7 +15,7 @@ def make_critic(env, exp_data, hid_size=128, rnd_hid_size=128, reward_type=0, sc
         ob_size = env.observation_space.shape[0]
     if reward_type == 0:
         if CNN_critic:
-            critic = RND_Critic_CNN(ob_size, ac_size, hid_size=hid_size, rnd_hid_size=rnd_hid_size, scale=scale, rnd_hid_layer=1, hid_layer=1, rnd_cnn_type=rnd_cnn_type)
+            critic = RND_Critic_CNN(ob_size, ac_size, hid_size=hid_size, rnd_hid_size=rnd_hid_size, scale=scale, rnd_hid_layer=2, hid_layer=2, rnd_cnn_type=rnd_cnn_type)
         else:
             critic = RND_Critic(ob_size, ac_size, hid_size=hid_size, rnd_hid_size=rnd_hid_size, scale=scale, rnd_hid_layer=1)
     elif reward_type == 1:
