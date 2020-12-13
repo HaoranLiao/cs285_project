@@ -325,7 +325,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.log(reward_giver.get_feature_loss(*batch))
             logger.log(reward_giver.get_reward(*batch))
             logger.log("="*30)
-        # exit()
+        exit()
 
         # reward_giver.load_trained_variables('../../params/rnd_critic')
 
