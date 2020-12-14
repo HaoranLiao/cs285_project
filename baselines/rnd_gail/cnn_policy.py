@@ -96,7 +96,7 @@ class CNNPolicy(object):
         layer = tf.reshape(cnn_layer, [-1, int(np.prod(cnn_layer.shape[1:]))])  # flatten cnn output, except the batch axis #1100+
         logger.log(f"policy_cnn out size: {layer.shape}")
 
-        list_of_output_shape = [1000, 500, 100]  # 1000 -> 500 -> 100
+        list_of_output_shape = [500, 100, 30]  # 1000 -> 500 -> 100 -> 30
         logger.log(f"policy cnn dense: {list_of_output_shape}")
         weights, biases = U.dense(layer, list_of_output_shape)
         for i in range(len(list_of_output_shape) - 1):
