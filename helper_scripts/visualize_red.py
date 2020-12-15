@@ -66,9 +66,7 @@ while True:
         plot(dfs.values()[0], plotting_categories)
     elif inp == "666":
         for df_name in dfs:
-            dfs[df_name]["EpMeanReturn(100 ep)"].to_csv('./out.zip')
-            import pdb
-            pdb.set_trace()
+            dfs[df_name]["EpMeanReturn(100 ep)"].to_csv(path_or_buf='out.csv')
     else:
         plotting_category = visualization_items[int(inp) - 1] 
         plot_multiple_run(dfs, plotting_category)
