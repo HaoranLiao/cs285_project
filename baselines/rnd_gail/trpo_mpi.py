@@ -298,14 +298,14 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
 
     if not mmd:
         ### Here is the training of the critic
-        # lr = 0.001
-        # reward_giver.train(*expert_dataset, lr=lr, iter=30)
-        # logger.log(f"learning rate: {lr}")
+        lr = 0.001
+        reward_giver.train(*expert_dataset, lr=lr, iter=30)
+        logger.log(f"learning rate: {lr}")
 
-        # reward_giver.save_trained_variables('../../params/rnd_critic')
+        reward_giver.save_trained_variables('../../params/rnd_critic_test')
 
-        reward_giver.load_trained_variables('../../params/rnd_critic')
-        logger.log('RND Critic Loaded: {"../../params/rnd_critic"}')
+        # reward_giver.load_trained_variables('../../params/rnd_critic')
+        # logger.log('RND Critic Loaded: {"../../params/rnd_critic"}')
 
         # inspect the reward learned
         indices = np.arange(len(expert_dataset[0]))
@@ -325,7 +325,7 @@ def learn(env, policy_func, reward_giver, expert_dataset, rank,
             logger.log(reward_giver.get_feature_loss(*batch))
             logger.log(reward_giver.get_reward(*batch))
             logger.log("="*30)
-        # exit()
+        exit()
 
     best = -2000
     save_ind = 0
