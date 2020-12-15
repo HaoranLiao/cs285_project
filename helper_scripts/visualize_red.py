@@ -64,6 +64,8 @@ while True:
         assert len(dfs) == 1
         plotting_categories = visualization_items
         plot(dfs.values()[0], plotting_categories)
+    elif inp == "666":
+        dfs["EpMeanReturn(100 ep)"].to_csv('out.zip')
     else:
         plotting_category = visualization_items[int(inp) - 1] 
         plot_multiple_run(dfs, plotting_category)
