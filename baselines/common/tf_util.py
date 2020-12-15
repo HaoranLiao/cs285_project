@@ -98,6 +98,19 @@ def cnn(cnn_type):
         ]
         strides = [[1, 2, 2, 1], [1, 4, 4, 1], [1, 2, 2, 1]]  # batch, x, y, channel # out 16*64
 
+    elif cnn_type == 6:
+        fan_in = [4, 32]
+        fan_out = [32, 32]
+        low, high = [], []
+        for i in range(len(fan_in)):
+            low.append(-np.sqrt(6.0 / (fan_in[i] + fan_out[i])))
+            high.append(np.sqrt(6.0 / (fan_in[i] + fan_out[i])))
+        filters = [
+            tf.Variable(tf.random_uniform((8, 8, fan_in[0], fan_out[0]), minval=low[0], maxval=high[0], dtype=tf.float32)),
+            tf.Variable(tf.random_uniform((5, 5, fan_in[1], fan_out[1]), minval=low[1], maxval=high[1], dtype=tf.float32)),
+        ]
+        strides = [[1, 4, 4, 1], [1, 3, 3, 1]]  # batch, x, y, channel # out: 81*32
+
     else:
         raise Exception("CNN Type Undefined")
 
